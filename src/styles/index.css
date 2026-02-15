@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+}
+
+body {
+  margin: 0;
+  color: #ffffff;
+  background: #0f0f0f;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.card {
+  @apply bg-dark-card border border-dark-border rounded-xl shadow p-4 transition-transform hover:scale-[1.02];
+}
+
+.btn {
+  @apply px-4 py-2 rounded-md bg-white text-black font-semibold hover:opacity-90 transition-opacity;
+}
+
+.btn-outline {
+  @apply px-4 py-2 rounded-full border border-dark-border text-gray-300 hover:border-accent-pink hover:text-accent-pink transition-colors text-sm;
+}
+
+.input {
+  @apply w-full border border-dark-border bg-dark-surface text-white rounded-md p-2 focus:border-accent-pink focus:outline-none;
+}
+
+/* Horizontal scroll container */
+.scroll-row {
+  @apply flex gap-4 overflow-x-auto pb-2;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: thin;
+}
+
+.scroll-row > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Section header */
+.section-header {
+  @apply flex justify-between items-center mb-4;
+}
+
+.section-title {
+  @apply text-xl font-bold text-white;
+}
+
+.section-link {
+  @apply text-sm text-gray-400 hover:text-accent-pink transition-colors cursor-pointer;
+}
+
+/* Badge */
+.badge {
+  @apply inline-block px-2 py-0.5 rounded text-xs font-semibold;
+}
+.badge-easy { @apply bg-green-600/30 text-green-400; }
+.badge-medium { @apply bg-yellow-600/30 text-yellow-400; }
+.badge-hard { @apply bg-red-600/30 text-red-400; }

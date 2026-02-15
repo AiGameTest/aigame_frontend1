@@ -1,0 +1,48 @@
+# ===== Dependencies =====
+node_modules/
+.pnp/
+.pnp.js
+
+# ===== Next.js build outputs =====
+.next/
+out/
+dist/
+
+# ===== Vite / other build outputs =====
+build/
+.vite/
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ===== Env files (secrets) =====
+.env
+.env.*
+!.env.example
+
+# ===== TypeScript =====
+*.tsbuildinfo
+
+# ===== Cache =====
+.cache/
+.turbo/
+.eslintcache
+.sass-cache/
+
+# ===== Testing =====
+coverage/
+
+# ===== Misc =====
+*.pem
