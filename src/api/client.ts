@@ -10,6 +10,9 @@ import type {
   CaseTemplateSummary,
   CreateUserCaseDraftRequest,
   GameSessionResponse,
+  InvestigateResponse,
+  MoveRequest,
+  MoveResponse,
   SessionSummaryResponse,
   StartSessionRequest,
   UpdateNicknameRequest,
@@ -132,5 +135,15 @@ export async function askQuestion(sessionId: number, payload: AskQuestionRequest
 
 export async function accuse(sessionId: number, payload: AccuseRequest): Promise<AccuseResponse> {
   const { data } = await api.post<AccuseResponse>(`/sessions/${sessionId}/accuse`, payload);
+  return data;
+}
+
+export async function moveToLocation(sessionId: number, payload: MoveRequest): Promise<MoveResponse> {
+  const { data } = await api.post<MoveResponse>(`/sessions/${sessionId}/move`, payload);
+  return data;
+}
+
+export async function investigate(sessionId: number): Promise<InvestigateResponse> {
+  const { data } = await api.post<InvestigateResponse>(`/sessions/${sessionId}/investigate`);
   return data;
 }

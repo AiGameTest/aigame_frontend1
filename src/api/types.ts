@@ -80,6 +80,10 @@ export interface GameSessionResponse {
   generatedStoryJson: string;
   messages: MessageLogItem[];
   evidence: EvidenceItem[];
+  actionLimit: number;
+  actionsUsed: number;
+  remainingActions: number;
+  currentLocation: string | null;
 }
 
 export interface SessionSummaryResponse {
@@ -104,4 +108,18 @@ export interface AccuseResponse {
   explanation: string;
   keyClues: string[];
   status: SessionStatus;
+}
+
+export interface MoveRequest { location: string; }
+export interface MoveResponse {
+  location: string;
+  availableSuspects: string[];
+  actionsUsed: number;
+  remainingActions: number;
+}
+
+export interface InvestigateResponse {
+  evidenceFound: EvidenceItem[];
+  actionsUsed: number;
+  remainingActions: number;
 }
