@@ -8,7 +8,7 @@ import { CaseCard } from '../components/CaseCard';
 /* ─── Hero Banner Slides ─── */
 const BANNERS = [
   {
-    title: 'AI 심문 추리 게임2',
+    title: 'AI 심문 추리 게임',
     subtitle: '용의자를 심문하고, 진범을 찾아내세요.',
     gradient: 'from-purple-900 via-pink-900 to-red-900',
   },
