@@ -7,7 +7,7 @@ type SessionState = {
   result: AccuseResponse | null;
   start: (payload: StartSessionRequest) => Promise<GameSessionResponse>;
   load: (sessionId: number) => Promise<void>;
-  ask: (sessionId: number, question: string) => Promise<void>;
+  ask: (sessionId: number, question: string, suspectName: string) => Promise<void>;
   accuse: (sessionId: number, suspectName: string) => Promise<AccuseResponse>;
 };
 
@@ -26,8 +26,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({ current: data });
   },
 
-  ask: async (sessionId, question) => {
-    await askQuestion(sessionId, { question });
+  ask: async (sessionId, question, suspectName) => {
+    await askQuestion(sessionId, { question, suspectName });
     const updated = await getSession(sessionId);
     set({ current: updated });
   },

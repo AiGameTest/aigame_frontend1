@@ -1,13 +1,19 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AccuseModal } from '../components/AccuseModal';
-import { EvidenceModal } from '../components/EvidenceModal';
 import { SuspectAvatar } from '../components/SuspectAvatar';
 import { useSessionStore } from '../store/sessionStore';
 
-function parseSuspects(storyJson: string): string[] {
+interface SuspectProfile {
+  name: string;
+  age?: number;
+  personality?: string;
+  background?: string;
+}
+
+function parseSuspects(storyJson: string): SuspectProfile[] {
   try {
-    const parsed = JSON.parse(storyJson) as { suspects?: string[] };
+    const parsed = JSON.parse(storyJson) as { suspects?: SuspectProfile[] };
     return parsed.suspects ?? [];
   } catch {
     return [];
@@ -24,32 +30,42 @@ export function PlayPage() {
   const accuse = useSessionStore((s) => s.accuse);
 
   const [question, setQuestion] = useState('');
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [accuseOpen, setAccuseOpen] = useState(false);
   const [selectedSuspect, setSelectedSuspect] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { void load(id); }, [id, load]);
 
-  const suspects = useMemo(() => current ? parseSuspects(current.generatedStoryJson) : [], [current]);
+  const suspectProfiles = useMemo(() => current ? parseSuspects(current.generatedStoryJson) : [], [current]);
+  const suspectNames = useMemo(() => suspectProfiles.map(s => s.name), [suspectProfiles]);
 
   // Auto-select first suspect
   useEffect(() => {
-    if (suspects.length > 0 && !selectedSuspect) {
-      setSelectedSuspect(suspects[0]);
+    if (suspectNames.length > 0 && !selectedSuspect) {
+      setSelectedSuspect(suspectNames[0]);
     }
-  }, [suspects, selectedSuspect]);
+  }, [suspectNames, selectedSuspect]);
 
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [current?.messages]);
 
+  const selectedProfile = useMemo(
+    () => suspectProfiles.find(s => s.name === selectedSuspect),
+    [suspectProfiles, selectedSuspect]
+  );
+
   async function submitAsk(e: FormEvent) {
     e.preventDefault();
-    if (!question.trim() || !selectedSuspect) return;
-    const fullQuestion = `[${selectedSuspect}에게] ${question}`;
-    await ask(id, fullQuestion);
+    if (!question.trim() || !selectedSuspect || loading) return;
+    setLoading(true);
+    try {
+      await ask(id, question, selectedSuspect);
+    } finally {
+      setLoading(false);
+    }
     setQuestion('');
   }
 
@@ -89,21 +105,25 @@ export function PlayPage() {
 
       {/* ── Suspect Avatars ── */}
       <div className="flex gap-2 md:gap-4 px-4 md:px-6 py-4 overflow-x-auto border-b border-dark-border/50 bg-dark-bg/40">
-        {suspects.map((s) => (
+        {suspectProfiles.map((s) => (
           <SuspectAvatar
-            key={s}
-            name={s}
-            selected={selectedSuspect === s}
-            onClick={() => setSelectedSuspect(s)}
+            key={s.name}
+            name={s.name}
+            selected={selectedSuspect === s.name}
+            onClick={() => setSelectedSuspect(s.name)}
           />
         ))}
       </div>
 
       {/* ── Chat Panel ── */}
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-3">
-        {selectedSuspect && (
-          <div className="text-center text-sm text-gray-500 mb-4">
-            ── {selectedSuspect} 와의 대화 ──
+        {selectedProfile && (
+          <div className="text-center mb-4">
+            <div className="text-sm text-gray-500">── {selectedProfile.name} 와의 대화 ──</div>
+            <div className="text-xs text-gray-600 mt-1">
+              {selectedProfile.age && `${selectedProfile.age}세`}
+              {selectedProfile.personality && ` · ${selectedProfile.personality}`}
+            </div>
           </div>
         )}
 
@@ -117,6 +137,11 @@ export function PlayPage() {
           }
 
           const isPlayer = m.role === 'PLAYER';
+          // Extract suspect name from "[name에게]" prefix in player messages
+          const suspectMatch = m.content.match(/^\[(.+?)에게\]\s*/);
+          const displayContent = isPlayer && suspectMatch ? m.content.slice(suspectMatch[0].length) : m.content;
+          const messageSuspect = suspectMatch?.[1];
+
           return (
             <div key={m.id} className={`flex ${isPlayer ? 'justify-end' : 'justify-start'}`}>
               <div
@@ -127,13 +152,24 @@ export function PlayPage() {
                 }`}
               >
                 <div className="text-[10px] mb-1 opacity-60">
-                  {isPlayer ? '🕵️ 탐정' : `👤 ${m.content.match(/^\[(.+?)\]/)?.[1] ?? '용의자'}`}
+                  {isPlayer
+                    ? `🕵️ 탐정 → ${messageSuspect ?? '용의자'}`
+                    : `👤 ${messageSuspect ?? selectedSuspect ?? '용의자'}`}
                 </div>
-                {m.content}
+                {displayContent}
               </div>
             </div>
           );
         })}
+
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-dark-surface text-gray-400 px-4 py-2.5 rounded-2xl rounded-bl-sm text-sm">
+              답변을 생성하는 중...
+            </div>
+          </div>
+        )}
+
         <div ref={chatEndRef} />
       </div>
 
@@ -145,21 +181,15 @@ export function PlayPage() {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={selectedSuspect ? `${selectedSuspect}에게 질문하기...` : '용의자를 선택하세요'}
-            disabled={!selectedSuspect}
+            disabled={!selectedSuspect || loading}
           />
-          <button className="btn" type="submit" disabled={!selectedSuspect || !question.trim()}>
-            보내기
+          <button className="btn" type="submit" disabled={!selectedSuspect || !question.trim() || loading}>
+            {loading ? '...' : '보내기'}
           </button>
         </form>
 
         {/* ── Bottom Actions ── */}
         <div className="flex gap-3 mt-3">
-          <button
-            className="btn-outline flex-1 flex items-center justify-center gap-1"
-            onClick={() => setEvidenceOpen(true)}
-          >
-            📋 증거 ({current.evidence.length})
-          </button>
           <button
             className="flex-1 px-4 py-2 rounded-full bg-accent-red text-white font-semibold hover:opacity-90 transition-opacity text-sm flex items-center justify-center gap-1"
             onClick={() => setAccuseOpen(true)}
@@ -169,8 +199,7 @@ export function PlayPage() {
         </div>
       </div>
 
-      <EvidenceModal open={evidenceOpen} onClose={() => setEvidenceOpen(false)} evidence={current.evidence} />
-      <AccuseModal open={accuseOpen} onClose={() => setAccuseOpen(false)} suspects={suspects} onSubmit={submitAccuse} />
+      <AccuseModal open={accuseOpen} onClose={() => setAccuseOpen(false)} suspects={suspectNames} onSubmit={submitAccuse} />
     </div>
   );
 }

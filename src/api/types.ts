@@ -94,8 +94,8 @@ export interface SessionSummaryResponse {
   startedAt: string;
 }
 
-export interface AskQuestionRequest { question: string; }
-export interface AskQuestionResponse { answer: string; remainingQuestions: number; evidenceDiscovered: EvidenceItem[]; }
+export interface AskQuestionRequest { question: string; suspectName: string; }
+export interface AskQuestionResponse { answer: string; remainingQuestions: number; suspectName: string; }
 
 export interface AccuseRequest { suspectName: string; }
 export interface AccuseResponse {
