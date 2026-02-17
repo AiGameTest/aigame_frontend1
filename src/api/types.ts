@@ -13,6 +13,7 @@ export interface UserMeResponse {
   nickname: string;
   role: UserRole;
   coins: number;
+  profileImageUrl: string;
 }
 
 export interface AuthTokenResponse {
@@ -24,7 +25,44 @@ export interface AuthTokenResponse {
 }
 
 export interface UpdateNicknameRequest { nickname: string; }
+export interface UpdateProfileImageRequest { profileImageUrl: string; }
 export interface AdminAddCoinsRequest { amount: number; reason: string; }
+
+export interface AdminCaseTemplateResponse {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: string;
+  baseStoryJson: string;
+  previewNarrative: string;
+  gameStartHour: number;
+  gameEndHour: number;
+  thumbnailUrl?: string;
+  playCount: number;
+  recommendCount: number;
+  createdAt: string;
+}
+
+export interface AdminUpdateCaseTemplateRequest {
+  title?: string;
+  description?: string;
+  difficulty?: string;
+  baseStoryJson?: string;
+  previewNarrative?: string;
+  gameStartHour?: number;
+  gameEndHour?: number;
+  thumbnailUrl?: string;
+}
+
+export interface AdminUpdateUserCaseRequest {
+  title?: string;
+  summary?: string;
+  scenarioPrompt?: string;
+  published?: boolean;
+  gameStartHour?: number;
+  gameEndHour?: number;
+  thumbnailUrl?: string;
+}
 
 export interface CaseTemplateSummary {
   id: number;
@@ -35,7 +73,7 @@ export interface CaseTemplateSummary {
   playCount: number;
   recommendCount: number;
 }
-export interface CaseTemplateDetail extends CaseTemplateSummary { previewNarrative: string; suspectNames: string[]; }
+export interface CaseTemplateDetail extends CaseTemplateSummary { previewNarrative: string; suspectNames: string[]; recommended?: boolean; }
 
 export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
 export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
@@ -54,6 +92,7 @@ export interface UserCaseDraftResponse {
   thumbnailUrl?: string;
   playCount: number;
   recommendCount: number;
+  recommended?: boolean;
 }
 
 export interface StartSessionRequest {
@@ -132,4 +171,21 @@ export interface MoveResponse {
 
 export interface InvestigateResponse {
   evidenceFound: EvidenceItem[];
+}
+
+export interface CaseCommentResponse {
+  id: number;
+  userId: number;
+  nickname: string;
+  profileImageUrl: string;
+  content: string;
+  likeCount: number;
+  liked: boolean;
+  createdAt: string;
+  replies: CaseCommentResponse[];
+}
+
+export interface CreateCommentRequest {
+  content: string;
+  parentId?: number | null;
 }

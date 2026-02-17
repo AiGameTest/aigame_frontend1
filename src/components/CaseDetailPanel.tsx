@@ -1,19 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCase, listMySessions, listPublishedUserCases } from '../api/client';
-import type { SessionSummaryResponse } from '../api/types';
+import {
+  addCaseComment,
+  addUserCaseComment,
+  deleteComment,
+  getCase,
+  listCaseComments,
+  listMySessions,
+  listPublishedUserCases,
+  listUserCaseComments,
+  recommendCase,
+  recommendUserCase,
+  toggleCommentLike,
+} from '../api/client';
+import type { CaseCommentResponse, SessionSummaryResponse } from '../api/types';
 import { useSessionStore } from '../store/sessionStore';
+import { useAuthStore } from '../store/authStore';
 
 type CaseSource = 'basic' | 'user';
 type TabType = '소개' | '댓글';
-
-interface Comment {
-  id: number;
-  author: string;
-  content: string;
-  createdAt: string;
-  likes: number;
-}
 
 interface PanelCase {
   id: number;
@@ -25,6 +30,7 @@ interface PanelCase {
   source: CaseSource;
   playCount: number;
   recommendCount: number;
+  recommended: boolean;
   thumbnailUrl?: string;
 }
 
@@ -47,33 +53,104 @@ const THUMBNAIL_COLORS = [
   'from-rose-900 via-pink-900 to-fuchsia-900',
 ];
 
-const DUMMY_COMMENTS: Comment[] = [
-  { id: 1, author: '탐정마스터', content: '정말 재밌는 사건이에요! 범인을 찾는 데 꽤 오래 걸렸지만 결국 성공했습니다 🎉', createdAt: '2026-02-10', likes: 12 },
-  { id: 2, author: '추리왕', content: '용의자들의 알리바이가 정말 치밀하게 짜여 있어서 놀랐어요. 강추!', createdAt: '2026-02-12', likes: 7 },
-  { id: 3, author: '미스테리러버', content: '시계탑이라는 배경이 분위기를 완벽하게 살려줬네요. 몰입감 최고!', createdAt: '2026-02-14', likes: 5 },
-];
-
 interface CaseDetailPanelProps {
   caseId: number | null;
   source: CaseSource;
   onClose: () => void;
 }
 
+function timeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = Math.floor((now - then) / 1000);
+  if (diff < 60) return '방금 전';
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+  if (diff < 2592000) return `${Math.floor(diff / 86400)}일 전`;
+  return new Date(dateStr).toLocaleDateString('ko-KR');
+}
+
+function CommentItem({
+  comment,
+  user,
+  onLike,
+  onDelete,
+  onReply,
+}: {
+  comment: CaseCommentResponse;
+  user: { id: number } | null;
+  onLike: (id: number) => void;
+  onDelete: (id: number) => void;
+  onReply: (id: number) => void;
+}) {
+  return (
+    <div className="flex gap-3">
+      <img
+        src={comment.profileImageUrl}
+        alt={comment.nickname}
+        className="w-8 h-8 flex-shrink-0 rounded-full bg-zinc-800 border border-white/10 object-cover"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-semibold text-gray-200">{comment.nickname}</span>
+          <span className="text-[11px] text-gray-600">{timeAgo(comment.createdAt)}</span>
+        </div>
+        <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
+        <div className="flex items-center gap-3 mt-2">
+          <button
+            onClick={() => onLike(comment.id)}
+            disabled={!user}
+            className={`flex items-center gap-1 text-[11px] transition-colors disabled:opacity-40 ${
+              comment.liked ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
+            }`}
+          >
+            {comment.liked ? '❤️' : '🤍'}
+            <span>{comment.likeCount}</span>
+          </button>
+          {comment.replies !== undefined && (
+            <button
+              onClick={() => onReply(comment.id)}
+              disabled={!user}
+              className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-40"
+            >
+              답글
+            </button>
+          )}
+          {user && user.id === comment.userId && (
+            <button
+              onClick={() => onDelete(comment.id)}
+              className="text-[11px] text-gray-600 hover:text-red-400 transition-colors"
+            >
+              삭제
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProps) {
   const navigate = useNavigate();
   const start = useSessionStore((s) => s.start);
+  const user = useAuthStore((s) => s.user);
 
   const [detail, setDetail] = useState<PanelCase | null>(null);
   const [activeSession, setActiveSession] = useState<SessionSummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('소개');
-  const [liked, setLiked] = useState(false);
-  const [localLikes, setLocalLikes] = useState(0);
-  const [comments, setComments] = useState<Comment[]>(DUMMY_COMMENTS);
+  const [recommending, setRecommending] = useState(false);
+
+  const [comments, setComments] = useState<CaseCommentResponse[]>([]);
+  const [commentCount, setCommentCount] = useState(0);
   const [commentInput, setCommentInput] = useState('');
-  const [commentLikes, setCommentLikes] = useState<Record<number, boolean>>({});
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyInput, setReplyInput] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const replyInputRef = useRef<HTMLInputElement>(null);
 
   const isOpen = caseId !== null;
 
@@ -90,12 +167,15 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  // Load case detail
   useEffect(() => {
     if (!caseId) {
       setDetail(null);
       setActiveSession(null);
-      setLiked(false);
       setActiveTab('소개');
+      setComments([]);
+      setCommentCount(0);
+      setReplyTo(null);
       return;
     }
     setLoading(true);
@@ -121,9 +201,9 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
             suspectNames, source: 'user',
             playCount: found.playCount ?? 0,
             recommendCount: found.recommendCount ?? 0,
+            recommended: found.recommended ?? false,
             thumbnailUrl: found.thumbnailUrl,
           });
-          setLocalLikes(found.recommendCount ?? 0);
         })
         .finally(() => setLoading(false));
 
@@ -142,8 +222,8 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
             suspectNames: d.suspectNames, source: 'basic',
             playCount: d.playCount ?? 0,
             recommendCount: d.recommendCount ?? 0,
+            recommended: d.recommended ?? false,
           });
-          setLocalLikes(d.recommendCount ?? 0);
         })
         .finally(() => setLoading(false));
 
@@ -156,8 +236,23 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     }
   }, [caseId, source]);
 
+  // Load comments when case is loaded
+  useEffect(() => {
+    if (!caseId) return;
+    const fetchComments = source === 'user' ? listUserCaseComments : listCaseComments;
+    fetchComments(caseId).then((data) => {
+      setComments(data);
+      const total = data.reduce((sum, c) => sum + 1 + (c.replies?.length ?? 0), 0);
+      setCommentCount(total);
+    }).catch(() => {});
+  }, [caseId, source]);
+
   async function handleStart() {
     if (!detail || starting) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     setStarting(true);
     try {
       const session = detail.source === 'user'
@@ -173,38 +268,107 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     if (activeSession) navigate(`/play/${activeSession.id}`);
   }
 
-  function handleLike() {
-    if (liked) {
-      setLiked(false);
-      setLocalLikes((n) => n - 1);
-    } else {
-      setLiked(true);
-      setLocalLikes((n) => n + 1);
+  async function handleLike() {
+    if (!detail || recommending || !user) return;
+    setRecommending(true);
+    try {
+      const result = detail.source === 'user'
+        ? await recommendUserCase(detail.id)
+        : await recommendCase(detail.id);
+      setDetail((prev) => prev ? {
+        ...prev,
+        recommended: result.recommended,
+        recommendCount: result.recommendCount,
+      } : prev);
+    } finally {
+      setRecommending(false);
     }
   }
 
-  function handleAddComment() {
-    if (!commentInput.trim()) return;
-    const newComment: Comment = {
-      id: Date.now(),
-      author: '나',
-      content: commentInput.trim(),
-      createdAt: new Date().toISOString().slice(0, 10),
-      likes: 0,
-    };
-    setComments((prev) => [newComment, ...prev]);
-    setCommentInput('');
+  async function handleAddComment() {
+    if (!commentInput.trim() || submittingComment || !user || !caseId) return;
+    setSubmittingComment(true);
+    try {
+      const addFn = source === 'user' ? addUserCaseComment : addCaseComment;
+      const newComment = await addFn(caseId, { content: commentInput.trim() });
+      setComments((prev) => [newComment, ...prev]);
+      setCommentCount((n) => n + 1);
+      setCommentInput('');
+    } finally {
+      setSubmittingComment(false);
+    }
   }
 
-  function handleCommentLike(commentId: number) {
-    setCommentLikes((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId
-          ? { ...c, likes: commentLikes[commentId] ? c.likes - 1 : c.likes + 1 }
-          : c
-      )
-    );
+  async function handleAddReply(parentId: number) {
+    if (!replyInput.trim() || submittingReply || !user || !caseId) return;
+    setSubmittingReply(true);
+    try {
+      const addFn = source === 'user' ? addUserCaseComment : addCaseComment;
+      const newReply = await addFn(caseId, { content: replyInput.trim(), parentId });
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === parentId
+            ? { ...c, replies: [...(c.replies ?? []), newReply] }
+            : c
+        )
+      );
+      setCommentCount((n) => n + 1);
+      setReplyInput('');
+      setReplyTo(null);
+    } finally {
+      setSubmittingReply(false);
+    }
+  }
+
+  async function handleCommentLike(commentId: number) {
+    if (!user) return;
+    try {
+      const result = await toggleCommentLike(commentId);
+      setComments((prev) => updateCommentLike(prev, commentId, result.liked, result.likeCount));
+    } catch {}
+  }
+
+  function updateCommentLike(
+    list: CaseCommentResponse[],
+    commentId: number,
+    liked: boolean,
+    likeCount: number
+  ): CaseCommentResponse[] {
+    return list.map((c) => {
+      if (c.id === commentId) return { ...c, liked, likeCount };
+      if (c.replies?.length) {
+        return { ...c, replies: updateCommentLike(c.replies, commentId, liked, likeCount) };
+      }
+      return c;
+    });
+  }
+
+  async function handleDeleteComment(commentId: number) {
+    if (!user) return;
+    try {
+      await deleteComment(commentId);
+      // Remove from root or from replies
+      setComments((prev) => {
+        const filtered = prev.filter((c) => c.id !== commentId);
+        if (filtered.length < prev.length) {
+          setCommentCount((n) => n - 1);
+          return filtered;
+        }
+        return prev.map((c) => {
+          if (c.replies?.some((r) => r.id === commentId)) {
+            setCommentCount((n) => n - 1);
+            return { ...c, replies: c.replies.filter((r) => r.id !== commentId) };
+          }
+          return c;
+        });
+      });
+    } catch {}
+  }
+
+  function handleReply(commentId: number) {
+    setReplyTo(replyTo === commentId ? null : commentId);
+    setReplyInput('');
+    setTimeout(() => replyInputRef.current?.focus(), 50);
   }
 
   const colorIdx = detail ? detail.id % THUMBNAIL_COLORS.length : 0;
@@ -217,7 +381,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       {/* 백드롭 */}
       <div className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
-      {/* 모달 — 고정 크기 (탭 전환해도 크기 불변) */}
+      {/* 모달 */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="relative w-full max-w-4xl bg-[#0f1117] border border-white/10 rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] flex overflow-hidden"
@@ -253,28 +417,29 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
               )}
             </div>
 
-            {/* 통계 바 — 고정 높이 */}
+            {/* 통계 바 */}
             <div className="flex-shrink-0 bg-black/70 border-t border-white/10 px-4 py-3 flex items-center justify-around">
               <div className="text-center">
                 <p className="text-white font-bold text-base">{(detail?.playCount ?? 0).toLocaleString()}</p>
                 <p className="text-gray-500 text-[11px] mt-0.5">플레이</p>
               </div>
               <div className="w-px h-8 bg-white/10" />
-              <button className="text-center group" onClick={handleLike}>
-                <p className={`font-bold text-base transition-colors ${liked ? 'text-red-400' : 'text-white group-hover:text-red-300'}`}>
-                  {localLikes.toLocaleString()}
+              <div className="text-center">
+                <p className={`font-bold
+                  text-base transition-colors text-white group-hover:text-red-300`}>
+                  {(detail?.recommendCount ?? 0).toLocaleString()}
                 </p>
                 <p className="text-gray-500 text-[11px] mt-0.5 group-hover:text-red-400 transition-colors">
                   좋아요
                 </p>
-              </button>
+              </div>
             </div>
           </div>
 
-          {/* ══ 오른쪽: 정보 패널 — flex col 고정 ══ */}
+          {/* 오른쪽: 정보 패널 */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ height: '100%' }}>
 
-            {/* 헤더 (shrink 안 함) */}
+            {/* 헤더 */}
             <div className="flex-shrink-0 px-5 pt-5 border-b border-white/10">
               <div className="flex items-start justify-between gap-3 pb-3">
                 <div className="min-w-0">
@@ -292,8 +457,12 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                         {/* 모바일용 통계 */}
                         <div className="md:hidden flex items-center gap-2 text-xs text-gray-400">
                           <span>▶ {detail.playCount}</span>
-                          <button onClick={handleLike} className={`transition-colors ${liked ? 'text-red-400' : ''}`}>
-                            {liked ? '❤️' : '🤍'} {localLikes}
+                          <button
+                            onClick={handleLike}
+                            disabled={recommending || !user}
+                            className={`transition-colors ${detail.recommended ? 'text-red-400' : ''}`}
+                          >
+                            {detail.recommended ? '❤️' : '🤍'} {detail.recommendCount}
                           </button>
                         </div>
                       </div>
@@ -309,7 +478,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                 </button>
               </div>
 
-              {/* 탭 — 항상 렌더 (크기 고정의 핵심) */}
+              {/* 탭 */}
               <div className={`flex gap-0 transition-opacity duration-150 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {(['소개', '댓글'] as TabType[]).map((tab) => (
                   <button
@@ -323,14 +492,14 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   >
                     {tab}
                     {tab === '댓글' && (
-                      <span className="ml-1.5 text-xs text-gray-500">{comments.length}</span>
+                      <span className="ml-1.5 text-xs text-gray-500">{commentCount}</span>
                     )}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 콘텐츠 영역 — flex-1, 내부에서 position absolute로 스크롤 제어 */}
+            {/* 콘텐츠 영역 */}
             <div className="flex-1 min-h-0 relative overflow-hidden">
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
@@ -338,7 +507,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                 </div>
               ) : !detail ? null : activeTab === '소개' ? (
 
-                /* ── 소개 탭 전체 스크롤 ── */
+                /* 소개 탭 */
                 <div className="absolute inset-0 overflow-y-auto">
                   <div className="p-5 space-y-4">
                     <div className="rounded-xl border border-white/10 bg-black/30 p-4">
@@ -363,78 +532,113 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                         </div>
                       </div>
                     )}
-
-                    <div>
-                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">다른 인기 사건</p>
-                      <div className="flex gap-2 overflow-x-auto pb-1">
-                        {[0, 1, 2].map((i) => (
-                          <div key={i} className="flex-shrink-0 w-20 h-14 rounded-lg bg-white/5 border border-white/10 animate-pulse" />
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </div>
 
               ) : (
 
-                /* ── 댓글 탭: 입력창 고정 + 목록만 스크롤 ── */
+                /* 댓글 탭 */
                 <div className="absolute inset-0 flex flex-col">
-                  {/* 댓글 입력창 — 고정 */}
-                  <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
-                    <div className="flex gap-2 items-center">
-                      <div className="w-8 h-8 flex-shrink-0 rounded-full bg-accent-pink/20 border border-accent-pink/30 flex items-center justify-center text-xs font-bold text-accent-pink">
-                        나
+                  {/* 댓글 입력 */}
+                  {user ? (
+                    <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
+                      <div className="flex gap-2 items-center">
+                        <img
+                          src={user.profileImageUrl}
+                          alt={user.nickname}
+                          className="w-8 h-8 flex-shrink-0 rounded-full bg-accent-pink/20 border border-accent-pink/30 object-cover"
+                        />
+                        <input
+                          ref={commentInputRef}
+                          className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-xl px-3 py-2 text-sm outline-none transition-all placeholder:text-gray-600"
+                          placeholder="댓글을 입력하세요..."
+                          value={commentInput}
+                          onChange={(e) => setCommentInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                        />
+                        <button
+                          onClick={handleAddComment}
+                          disabled={!commentInput.trim() || submittingComment}
+                          className="flex-shrink-0 px-3 py-2 rounded-xl bg-accent-pink text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
+                        >
+                          등록
+                        </button>
                       </div>
-                      <input
-                        ref={commentInputRef}
-                        className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-xl px-3 py-2 text-sm outline-none transition-all placeholder:text-gray-600"
-                        placeholder="댓글을 입력하세요..."
-                        value={commentInput}
-                        onChange={(e) => setCommentInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                      />
-                      <button
-                        onClick={handleAddComment}
-                        disabled={!commentInput.trim()}
-                        className="flex-shrink-0 px-3 py-2 rounded-xl bg-accent-pink text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
-                      >
-                        등록
-                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
+                      <p className="text-sm text-gray-500 text-center py-1">로그인 후 댓글을 작성할 수 있습니다</p>
+                    </div>
+                  )}
 
-                  {/* 댓글 목록 — 이 영역만 스크롤 */}
+                  {/* 댓글 목록 */}
                   <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
                     {comments.length === 0 ? (
                       <p className="text-center text-gray-500 text-sm py-8">첫 댓글을 남겨보세요!</p>
                     ) : (
                       <div className="space-y-5">
                         {comments.map((comment) => (
-                          <div key={comment.id} className="flex gap-3">
-                            <div className="w-8 h-8 flex-shrink-0 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-semibold text-gray-300">
-                              {comment.author[0]}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-semibold text-gray-200">{comment.author}</span>
-                                <span className="text-[11px] text-gray-600">{comment.createdAt}</span>
+                          <div key={comment.id}>
+                            <CommentItem
+                              comment={comment}
+                              user={user}
+                              onLike={handleCommentLike}
+                              onDelete={handleDeleteComment}
+                              onReply={handleReply}
+                            />
+
+                            {/* 답글 목록 */}
+                            {comment.replies?.length > 0 && (
+                              <div className="ml-11 mt-3 space-y-3 pl-3 border-l border-white/5">
+                                {comment.replies.map((reply) => (
+                                  <CommentItem
+                                    key={reply.id}
+                                    comment={reply}
+                                    user={user}
+                                    onLike={handleCommentLike}
+                                    onDelete={handleDeleteComment}
+                                    onReply={() => handleReply(comment.id)}
+                                  />
+                                ))}
                               </div>
-                              <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
-                              <div className="flex items-center gap-3 mt-2">
-                                <button
-                                  onClick={() => handleCommentLike(comment.id)}
-                                  className={`flex items-center gap-1 text-[11px] transition-colors ${
-                                    commentLikes[comment.id] ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
-                                  }`}
-                                >
-                                  {commentLikes[comment.id] ? '❤️' : '🤍'}
-                                  <span>{comment.likes}</span>
-                                </button>
-                                <button className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors">
-                                  답글
-                                </button>
+                            )}
+
+                            {/* 답글 입력 */}
+                            {replyTo === comment.id && user && (
+                              <div className="ml-11 mt-3 pl-3 border-l border-white/5">
+                                <div className="flex gap-2 items-center">
+                                  <img
+                                    src={user.profileImageUrl}
+                                    alt={user.nickname}
+                                    className="w-6 h-6 flex-shrink-0 rounded-full object-cover"
+                                  />
+                                  <input
+                                    ref={replyInputRef}
+                                    className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all placeholder:text-gray-600"
+                                    placeholder="답글을 입력하세요..."
+                                    value={replyInput}
+                                    onChange={(e) => setReplyInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleAddReply(comment.id);
+                                      if (e.key === 'Escape') { setReplyTo(null); setReplyInput(''); }
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => handleAddReply(comment.id)}
+                                    disabled={!replyInput.trim() || submittingReply}
+                                    className="flex-shrink-0 px-2.5 py-1.5 rounded-lg bg-accent-pink text-white text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
+                                  >
+                                    등록
+                                  </button>
+                                  <button
+                                    onClick={() => { setReplyTo(null); setReplyInput(''); }}
+                                    className="flex-shrink-0 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                                  >
+                                    취소
+                                  </button>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -444,20 +648,22 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
               )}
             </div>
 
-            {/* 하단 버튼 — 항상 하단 고정 */}
+            {/* 하단 버튼 */}
             {!loading && detail && (
               <div className="flex-shrink-0 border-t border-white/10 p-4">
                 <div className="flex gap-2">
                   <button
                     onClick={handleLike}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-                      liked
+                    disabled={recommending || !user}
+                    title={!user ? '로그인 후 추천할 수 있습니다' : undefined}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all disabled:opacity-50 ${
+                      detail.recommended
                         ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30'
                         : 'bg-white/5 border-white/15 text-gray-300 hover:border-white/30 hover:text-white'
                     }`}
                   >
-                    <span>{liked ? '❤️' : '🤍'}</span>
-                    <span>{localLikes}</span>
+                    <span>{detail.recommended ? '❤️' : '🤍'}</span>
+                    <span>{detail.recommendCount}</span>
                   </button>
 
                   {activeSession && (

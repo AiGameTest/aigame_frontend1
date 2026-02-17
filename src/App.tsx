@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { AppLayout } from './components/AppLayout';
 import { ProtectedRoute } from './routes/ProtectedRoute';
+import { AdminRoute } from './routes/AdminRoute';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
@@ -13,6 +14,8 @@ import { CreatePage } from './pages/CreatePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AiModePage } from './pages/AiModePage';
 import { CoinShopPage } from './pages/CoinShopPage';
+import { AdminPage } from './pages/AdminPage';
+import { AdminCaseEditPage } from './pages/AdminCaseEditPage';
 
 export default function App() {
   const bootstrap = useAuthStore((s) => s.bootstrap);
@@ -34,6 +37,8 @@ export default function App() {
         <Route path="/create" element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
         <Route path="/me" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/coins" element={<ProtectedRoute><CoinShopPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+        <Route path="/admin/edit/:type/:id" element={<AdminRoute><AdminCaseEditPage /></AdminRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppLayout>

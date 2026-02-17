@@ -3,11 +3,16 @@ import type {
   AccuseRequest,
   AccuseResponse,
   AdminAddCoinsRequest,
+  AdminCaseTemplateResponse,
+  AdminUpdateCaseTemplateRequest,
+  AdminUpdateUserCaseRequest,
   AskQuestionRequest,
   AskQuestionResponse,
   AuthTokenResponse,
+  CaseCommentResponse,
   CaseTemplateDetail,
   CaseTemplateSummary,
+  CreateCommentRequest,
   CreateUserCaseDraftRequest,
   GameSessionResponse,
   InvestigateResponse,
@@ -16,6 +21,7 @@ import type {
   SessionSummaryResponse,
   StartSessionRequest,
   UpdateNicknameRequest,
+  UpdateProfileImageRequest,
   UpdateUserCaseDraftRequest,
   UserCaseDraftResponse,
   UserMeResponse
@@ -73,9 +79,52 @@ export async function updateNickname(payload: UpdateNicknameRequest): Promise<Us
   return data;
 }
 
+export async function updateProfileImage(payload: UpdateProfileImageRequest): Promise<UserMeResponse> {
+  const { data } = await api.patch<UserMeResponse>('/users/me/profile-image', payload);
+  return data;
+}
+
 export async function adminAddCoins(userId: number, payload: AdminAddCoinsRequest): Promise<UserMeResponse> {
   const { data } = await api.post<UserMeResponse>(`/admin/users/${userId}/coins`, payload);
   return data;
+}
+
+export async function adminListCases(): Promise<AdminCaseTemplateResponse[]> {
+  const { data } = await api.get<AdminCaseTemplateResponse[]>('/admin/cases');
+  return data;
+}
+
+export async function adminGetCase(caseId: number): Promise<AdminCaseTemplateResponse> {
+  const { data } = await api.get<AdminCaseTemplateResponse>(`/admin/cases/${caseId}`);
+  return data;
+}
+
+export async function adminUpdateCase(caseId: number, payload: AdminUpdateCaseTemplateRequest): Promise<AdminCaseTemplateResponse> {
+  const { data } = await api.put<AdminCaseTemplateResponse>(`/admin/cases/${caseId}`, payload);
+  return data;
+}
+
+export async function adminDeleteCase(caseId: number): Promise<void> {
+  await api.delete(`/admin/cases/${caseId}`);
+}
+
+export async function adminListUserCases(): Promise<UserCaseDraftResponse[]> {
+  const { data } = await api.get<UserCaseDraftResponse[]>('/admin/user-cases');
+  return data;
+}
+
+export async function adminGetUserCase(draftId: number): Promise<UserCaseDraftResponse> {
+  const { data } = await api.get<UserCaseDraftResponse>(`/admin/user-cases/${draftId}`);
+  return data;
+}
+
+export async function adminUpdateUserCaseByAdmin(draftId: number, payload: AdminUpdateUserCaseRequest): Promise<UserCaseDraftResponse> {
+  const { data } = await api.put<UserCaseDraftResponse>(`/admin/user-cases/${draftId}`, payload);
+  return data;
+}
+
+export async function adminDeleteUserCase(draftId: number): Promise<void> {
+  await api.delete(`/admin/user-cases/${draftId}`);
 }
 
 export async function listCases(sort?: 'recommended'): Promise<CaseTemplateSummary[]> {
@@ -122,12 +171,14 @@ export async function listPublishedUserCases(sort?: 'recommended'): Promise<User
   return data;
 }
 
-export async function recommendCase(caseId: number): Promise<void> {
-  await api.post(`/cases/${caseId}/recommend`);
+export async function recommendCase(caseId: number): Promise<{ recommended: boolean; recommendCount: number }> {
+  const { data } = await api.post<{ recommended: boolean; recommendCount: number }>(`/cases/${caseId}/recommend`);
+  return data;
 }
 
-export async function recommendUserCase(draftId: number): Promise<void> {
-  await api.post(`/user-cases/${draftId}/recommend`);
+export async function recommendUserCase(draftId: number): Promise<{ recommended: boolean; recommendCount: number }> {
+  const { data } = await api.post<{ recommended: boolean; recommendCount: number }>(`/user-cases/${draftId}/recommend`);
+  return data;
 }
 
 export async function listMySessions(): Promise<SessionSummaryResponse[]> {
@@ -172,5 +223,36 @@ export async function uploadFile(file: File, folder = 'suspects'): Promise<{ url
   const { data } = await api.post<{ url: string }>('/files/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data;
+}
+
+// ── Comments ──
+
+export async function listCaseComments(caseId: number): Promise<CaseCommentResponse[]> {
+  const { data } = await api.get<CaseCommentResponse[]>(`/cases/${caseId}/comments`);
+  return data;
+}
+
+export async function addCaseComment(caseId: number, payload: CreateCommentRequest): Promise<CaseCommentResponse> {
+  const { data } = await api.post<CaseCommentResponse>(`/cases/${caseId}/comments`, payload);
+  return data;
+}
+
+export async function listUserCaseComments(draftId: number): Promise<CaseCommentResponse[]> {
+  const { data } = await api.get<CaseCommentResponse[]>(`/user-cases/${draftId}/comments`);
+  return data;
+}
+
+export async function addUserCaseComment(draftId: number, payload: CreateCommentRequest): Promise<CaseCommentResponse> {
+  const { data } = await api.post<CaseCommentResponse>(`/user-cases/${draftId}/comments`, payload);
+  return data;
+}
+
+export async function deleteComment(commentId: number): Promise<void> {
+  await api.delete(`/comments/${commentId}`);
+}
+
+export async function toggleCommentLike(commentId: number): Promise<{ liked: boolean; likeCount: number }> {
+  const { data } = await api.post<{ liked: boolean; likeCount: number }>(`/comments/${commentId}/like`);
   return data;
 }

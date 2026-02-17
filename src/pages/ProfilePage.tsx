@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listMyCases, listMySessions, updateNickname } from '../api/client';
+import { listMyCases, listMySessions, updateNickname, updateProfileImage, uploadFile } from '../api/client';
 import type { SessionSummaryResponse, UserCaseDraftResponse } from '../api/types';
 import { useAuthStore } from '../store/authStore';
 
@@ -35,6 +35,7 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingProfile, setUploadingProfile] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
@@ -68,6 +69,24 @@ export function ProfilePage() {
     }
   };
 
+  const handleProfileImageChange = async (file: File | null) => {
+    if (!file) return;
+    setUploadingProfile(true);
+    setSaveMessage('');
+    try {
+      const uploaded = await uploadFile(file, 'profiles');
+      await updateProfileImage({ profileImageUrl: uploaded.url });
+      await bootstrap();
+      setSaveMessage('프로필 이미지가 변경되었습니다.');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch {
+      setSaveMessage('프로필 이미지 변경에 실패했습니다.');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setUploadingProfile(false);
+    }
+  };
+
   if (!user) return null;
 
   const activeSessions = sessions.filter((s) => s.status === 'ACTIVE');
@@ -82,8 +101,26 @@ export function ProfilePage() {
       <div className="bg-dark-card border border-dark-border rounded-2xl p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-dark-surface flex items-center justify-center text-3xl font-bold text-white border border-dark-border">
-              {user.nickname.charAt(0).toUpperCase()}
+            <div className="relative">
+              <img
+                src={user.profileImageUrl}
+                alt={`${user.nickname} 프로필`}
+                className="w-20 h-20 rounded-full object-cover bg-dark-surface border border-dark-border"
+              />
+              <label className="absolute -bottom-1 -right-1 text-xs px-2 py-1 rounded-full bg-dark-card border border-dark-border text-gray-200 cursor-pointer hover:text-white">
+                {uploadingProfile ? '업로드중' : '변경'}
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  disabled={uploadingProfile}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    void handleProfileImageChange(file);
+                    e.currentTarget.value = '';
+                  }}
+                />
+              </label>
             </div>
 
             <div className="space-y-2">

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getCase, listMySessions, listPublishedUserCases, recommendCase, recommendUserCase } from '../api/client';
 import type { CaseTemplateDetail, SessionSummaryResponse, UserCaseDraftResponse } from '../api/types';
 import { useSessionStore } from '../store/sessionStore';
+import { useAuthStore } from '../store/authStore';
 
 type CaseSource = 'basic' | 'user';
 
@@ -15,6 +16,7 @@ interface DisplayCase {
   source: CaseSource;
   playCount: number;
   recommendCount: number;
+  recommended: boolean;
 }
 
 const DIFFICULTY_LABEL: Record<string, string> = {
@@ -59,6 +61,7 @@ function parseUserCase(caseData: UserCaseDraftResponse): DisplayCase {
     source: 'user',
     playCount: caseData.playCount ?? 0,
     recommendCount: caseData.recommendCount ?? 0,
+    recommended: caseData.recommended ?? false,
   };
 }
 
@@ -76,6 +79,7 @@ export function CasePage() {
   const [loadError, setLoadError] = useState('');
 
   const start = useSessionStore((s) => s.start);
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     if (!id) return;
@@ -117,6 +121,7 @@ export function CasePage() {
           source: 'basic',
           playCount: d.playCount ?? 0,
           recommendCount: d.recommendCount ?? 0,
+          recommended: d.recommended ?? false,
         });
       })
       .catch(() => setLoadError('기본 사건을 불러오지 못했습니다.'));
@@ -131,6 +136,10 @@ export function CasePage() {
 
   async function startCase() {
     if (!detail || loading) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     setLoading(true);
     try {
       const session =
@@ -144,15 +153,15 @@ export function CasePage() {
   }
 
   async function onRecommend() {
-    if (!detail || recommending) return;
+    if (!detail || recommending || !user) return;
     setRecommending(true);
     try {
-      if (detail.source === 'user') {
-        await recommendUserCase(detail.id);
-      } else {
-        await recommendCase(detail.id);
-      }
-      setDetail((prev) => (prev ? { ...prev, recommendCount: prev.recommendCount + 1 } : prev));
+      const result = detail.source === 'user'
+        ? await recommendUserCase(detail.id)
+        : await recommendCase(detail.id);
+      setDetail((prev) =>
+        prev ? { ...prev, recommended: result.recommended, recommendCount: result.recommendCount } : prev
+      );
     } finally {
       setRecommending(false);
     }
@@ -193,11 +202,14 @@ export function CasePage() {
         <span>▶ 플레이 {detail.playCount}</span>
         <button
           type="button"
-          className="hover:text-red-300 transition-colors disabled:opacity-60"
+          className={`transition-colors disabled:opacity-60 ${
+            detail.recommended ? 'text-red-400' : 'hover:text-red-300'
+          }`}
           onClick={onRecommend}
-          disabled={recommending}
+          disabled={recommending || !user}
+          title={!user ? '로그인 후 추천할 수 있습니다' : undefined}
         >
-          ♥ 추천 {detail.recommendCount}
+          {detail.recommended ? '♥' : '♡'} 추천 {detail.recommendCount}
         </button>
       </div>
 
