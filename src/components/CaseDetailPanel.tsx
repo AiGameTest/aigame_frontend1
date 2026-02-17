@@ -221,12 +221,12 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="relative w-full max-w-4xl bg-[#0f1117] border border-white/10 rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] flex overflow-hidden"
-          style={{ height: 'min(84vh, 800px)', minHeight: '500px' }}
+          style={{ height: 'min(72vh, 680px)', minHeight: '460px' }}
           onClick={(e) => e.stopPropagation()}
         >
 
           {/* ══ 왼쪽: 이미지 패널 ══ */}
-          <div className="hidden md:flex w-[300px] flex-shrink-0 flex-col" style={{ height: '100%' }}>
+          <div className="hidden md:flex w-[360px] flex-shrink-0 flex-col" style={{ height: '100%' }}>
 
             {/* 이미지 — flex-1으로 나머지 공간 전부 차지 */}
             <div className="flex-1 relative overflow-hidden min-h-0">
@@ -265,14 +265,9 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   {localLikes.toLocaleString()}
                 </p>
                 <p className="text-gray-500 text-[11px] mt-0.5 group-hover:text-red-400 transition-colors">
-                  {liked ? '❤️ 좋아요' : '🤍 좋아요'}
+                  좋아요
                 </p>
               </button>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className="text-white font-bold text-base">{comments.length}</p>
-                <p className="text-gray-500 text-[11px] mt-0.5">댓글</p>
-              </div>
             </div>
           </div>
 
@@ -370,7 +365,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                     )}
 
                     <div>
-                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">비슷한 사건들</p>
+                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">다른 인기 사건</p>
                       <div className="flex gap-2 overflow-x-auto pb-1">
                         {[0, 1, 2].map((i) => (
                           <div key={i} className="flex-shrink-0 w-20 h-14 rounded-lg bg-white/5 border border-white/10 animate-pulse" />
