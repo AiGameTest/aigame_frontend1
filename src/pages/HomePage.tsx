@@ -135,15 +135,23 @@ function CommunityCaseCard({
         <div
           className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${colors[colorIdx]} mb-2`}
         >
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-4xl opacity-50">사건</span>
-          </div>
+          {c.thumbnailUrl ? (
+            <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-4xl opacity-50">사건</span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
         </div>
         <h3 className="text-sm font-semibold text-white truncate group-hover:text-accent-pink transition-colors">
           {c.title}
         </h3>
         <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.summary}</p>
+        <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-400">
+          <span>▶ {c.playCount ?? 0}</span>
+          <span>♥ {c.recommendCount ?? 0}</span>
+        </div>
       </div>
     </div>
   );
@@ -159,8 +167,8 @@ export function HomePage() {
   const [selectedSource, setSelectedSource] = useState<'basic' | 'user'>('basic');
 
   useEffect(() => {
-    void listCases().then(setCases).catch(() => setCases([]));
-    void listPublishedUserCases().then(setCommunityCases).catch(() => setCommunityCases([]));
+    void listCases('recommended').then(setCases).catch(() => setCases([]));
+    void listPublishedUserCases('recommended').then(setCommunityCases).catch(() => setCommunityCases([]));
   }, []);
 
   useEffect(() => {

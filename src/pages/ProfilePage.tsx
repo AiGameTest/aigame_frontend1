@@ -176,12 +176,20 @@ export function ProfilePage() {
                 onClick={() => navigate(`/play/${s.id}`)}
               >
                 <div>
+                  {s.title && (
+                    <p className="text-sm font-bold text-white mb-1">{s.title}</p>
+                  )}
                   <span className="text-xs px-2 py-0.5 rounded bg-dark-card text-gray-300 mr-2">
                     {MODE_LABEL[s.mode] ?? s.mode}
                   </span>
                   <span className={`text-sm font-semibold ${STATUS_STYLE[s.status]}`}>
                     {STATUS_LABEL[s.status]}
                   </span>
+                  {s.gameStartHour != null && s.gameEndHour != null && s.gameMinutesUsed != null && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      게임 시간: {s.gameStartHour}시~{s.gameEndHour}시 / 경과: {s.gameMinutesUsed}분
+                    </p>
+                  )}
                   <p className="text-sm text-gray-400 mt-1">
                     시작: {new Date(s.startedAt).toLocaleString('ko-KR')}
                   </p>
@@ -204,6 +212,9 @@ export function ProfilePage() {
                 onClick={() => navigate(`/result/${s.id}`)}
               >
                 <div>
+                  {s.title && (
+                    <p className="text-sm font-bold text-white mb-1">{s.title}</p>
+                  )}
                   <span className="text-xs px-2 py-0.5 rounded bg-dark-card text-gray-300 mr-2">
                     {MODE_LABEL[s.mode] ?? s.mode}
                   </span>
@@ -234,6 +245,12 @@ export function ProfilePage() {
                     {c.published ? 'Published' : 'Draft'}
                   </span>
                   <span className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
+                  <button
+                    className="text-xs px-2 py-1 rounded border border-white/15 text-gray-300 hover:text-white hover:border-white/30 transition-colors ml-auto"
+                    onClick={() => navigate(`/create?editId=${c.id}`)}
+                  >
+                    수정
+                  </button>
                 </div>
               </div>
             ))}

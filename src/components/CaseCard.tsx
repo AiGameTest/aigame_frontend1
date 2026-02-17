@@ -49,6 +49,10 @@ export function CaseCard({ c, onClick }: CaseCardProps) {
           {c.title}
         </h3>
         <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.description}</p>
+        <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-400">
+          <span>▶ {c.playCount ?? 0}</span>
+          <span>♥ {c.recommendCount ?? 0}</span>
+        </div>
       </div>
     </div>
   );

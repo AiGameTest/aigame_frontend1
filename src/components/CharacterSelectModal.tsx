@@ -2,6 +2,7 @@ interface SuspectInfo {
   name: string;
   age?: number;
   personality?: string;
+  imageUrl?: string;
 }
 
 interface CharacterSelectModalProps {
@@ -29,12 +30,16 @@ export function CharacterSelectModal({ open, suspects, onSelect, onClose }: Char
                 onClick={() => onSelect(s.name)}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-dark-surface border border-dark-border text-gray-200 hover:bg-dark-card hover:border-gray-500 transition-all"
               >
-                <div className="w-12 h-12 rounded-full bg-dark-card flex-shrink-0 flex items-center justify-center">
-                  <svg viewBox="0 0 80 80" className="w-full h-full" fill="none">
-                    <circle cx="40" cy="28" r="14" fill="#555" />
-                    <path d="M16 72 C16 52 28 44 40 44 C52 44 64 52 64 72" fill="#555" />
-                  </svg>
-                </div>
+                {s.imageUrl ? (
+                  <img src={s.imageUrl} alt={s.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-white/10" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-dark-card flex-shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 80 80" className="w-full h-full" fill="none">
+                      <circle cx="40" cy="28" r="14" fill="#555" />
+                      <path d="M16 72 C16 52 28 44 40 44 C52 44 64 52 64 72" fill="#555" />
+                    </svg>
+                  </div>
+                )}
                 <div className="text-left">
                   <div className="font-semibold text-sm">{s.name}</div>
                   <div className="text-xs text-gray-400">

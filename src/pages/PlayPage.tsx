@@ -14,6 +14,7 @@ interface SuspectProfile {
   age?: number;
   personality?: string;
   background?: string;
+  imageUrl?: string;
   timeline?: { time: string; location: string; action: string }[];
 }
 
@@ -307,14 +308,28 @@ export function PlayPage() {
                         onClick={() => handleCharacterSelect(s.name)}
                         disabled={!isActive}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-semibold text-gray-100">{s.name}</p>
-                          <span className="text-[10px] uppercase tracking-wide text-gray-300">대화</span>
+                        <div className="flex items-start gap-3">
+                          {s.imageUrl ? (
+                            <img src={s.imageUrl} alt={s.name} className="w-12 h-12 rounded-lg object-cover border border-white/10 flex-shrink-0" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-zinc-800 flex-shrink-0 flex items-center justify-center">
+                              <svg viewBox="0 0 80 80" className="w-8 h-8" fill="none">
+                                <circle cx="40" cy="28" r="14" fill="#555" />
+                                <path d="M16 72 C16 52 28 44 40 44 C52 44 64 52 64 72" fill="#555" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-semibold text-gray-100">{s.name}</p>
+                              <span className="text-[10px] uppercase tracking-wide text-gray-300">대화</span>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">
+                              {s.age ? `${s.age}세` : '나이 미상'}{s.personality ? ` / ${s.personality}` : ''}
+                            </p>
+                            {s.background && <p className="mt-1 text-xs text-gray-500 line-clamp-2">{s.background}</p>}
+                          </div>
                         </div>
-                        <p className="mt-1 text-xs text-gray-400">
-                          {s.age ? `${s.age}세` : '나이 미상'}{s.personality ? ` / ${s.personality}` : ''}
-                        </p>
-                        {s.background && <p className="mt-1 text-xs text-gray-500 line-clamp-2">{s.background}</p>}
                       </button>
                     ))}
                   </div>

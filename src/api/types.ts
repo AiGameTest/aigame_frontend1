@@ -26,11 +26,19 @@ export interface AuthTokenResponse {
 export interface UpdateNicknameRequest { nickname: string; }
 export interface AdminAddCoinsRequest { amount: number; reason: string; }
 
-export interface CaseTemplateSummary { id: number; title: string; description: string; difficulty: string; }
+export interface CaseTemplateSummary {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: string;
+  thumbnailUrl?: string;
+  playCount: number;
+  recommendCount: number;
+}
 export interface CaseTemplateDetail extends CaseTemplateSummary { previewNarrative: string; suspectNames: string[]; }
 
-export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; }
-export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; }
+export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
+export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
 
 export interface UserCaseDraftResponse {
   id: number;
@@ -43,6 +51,9 @@ export interface UserCaseDraftResponse {
   updatedAt: string;
   gameStartHour: number;
   gameEndHour: number;
+  thumbnailUrl?: string;
+  playCount: number;
+  recommendCount: number;
 }
 
 export interface StartSessionRequest {
@@ -95,6 +106,10 @@ export interface SessionSummaryResponse {
   sourceRefId: number | null;
   status: SessionStatus;
   startedAt: string;
+  title?: string;
+  gameStartHour?: number;
+  gameEndHour?: number;
+  gameMinutesUsed?: number;
 }
 
 export interface AskQuestionRequest { question: string; suspectName: string; }
@@ -118,4 +133,3 @@ export interface MoveResponse {
 export interface InvestigateResponse {
   evidenceFound: EvidenceItem[];
 }
-
