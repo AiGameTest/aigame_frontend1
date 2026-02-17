@@ -47,7 +47,6 @@ const THUMBNAIL_COLORS = [
   'from-rose-900 via-pink-900 to-fuchsia-900',
 ];
 
-// 더미 댓글 데이터 (실제 API 연결 전 목업)
 const DUMMY_COMMENTS: Comment[] = [
   { id: 1, author: '탐정마스터', content: '정말 재밌는 사건이에요! 범인을 찾는 데 꽤 오래 걸렸지만 결국 성공했습니다 🎉', createdAt: '2026-02-10', likes: 12 },
   { id: 2, author: '추리왕', content: '용의자들의 알리바이가 정말 치밀하게 짜여 있어서 놀랐어요. 강추!', createdAt: '2026-02-12', likes: 7 },
@@ -78,7 +77,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
 
   const isOpen = caseId !== null;
 
-  // ESC 키로 닫기
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -87,7 +85,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // 배경 스크롤 잠금
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -184,7 +181,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       setLiked(true);
       setLocalLikes((n) => n + 1);
     }
-    // TODO: 실제 API 호출 연동
   }
 
   function handleAddComment() {
@@ -219,83 +215,82 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   return (
     <>
       {/* 백드롭 */}
-      <div
-        className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
-      {/* 모달 — 좌우 분할 레이아웃 */}
+      {/* 모달 — 고정 크기 (탭 전환해도 크기 불변) */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="relative w-full max-w-3xl bg-[#0f1117] border border-white/10 rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] flex overflow-hidden"
-          style={{ maxHeight: '88vh' }}
+          className="relative w-full max-w-4xl bg-[#0f1117] border border-white/10 rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] flex overflow-hidden"
+          style={{ height: 'min(84vh, 800px)', minHeight: '500px' }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ── 왼쪽: 이미지 패널 ── */}
-          <div className="hidden md:flex w-[280px] flex-shrink-0 flex-col">
-            {loading || !detail ? (
-              <div className={`flex-1 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]}`} />
-            ) : detail.thumbnailUrl ? (
-              <img
-                src={detail.thumbnailUrl}
-                alt={detail.title}
-                className="w-full h-full object-cover"
-                style={{ minHeight: 0 }}
-              />
-            ) : (
-              <div className={`flex-1 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} relative flex flex-col items-center justify-center gap-4`}>
-                {/* 장식 원 */}
-                <div className="absolute top-8 left-8 w-24 h-24 rounded-full bg-white/5 blur-xl" />
-                <div className="absolute bottom-12 right-6 w-16 h-16 rounded-full bg-white/5 blur-xl" />
-                <span className="relative text-7xl opacity-30">🔎</span>
-                {detail && (
-                  <div className="relative text-center px-4">
-                    <p className="text-white/60 text-xs uppercase tracking-widest">Murder Mystery</p>
-                    <p className="text-white font-black text-lg mt-1 leading-tight">{detail.title}</p>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* 이미지 아래 플레이/좋아요 통계 */}
-            {detail && (
-              <div className="bg-black/60 border-t border-white/10 px-4 py-3 flex items-center justify-around">
-                <div className="text-center">
-                  <p className="text-white font-bold text-base">{detail.playCount.toLocaleString()}</p>
-                  <p className="text-gray-500 text-[11px] mt-0.5">플레이</p>
+          {/* ══ 왼쪽: 이미지 패널 ══ */}
+          <div className="hidden md:flex w-[300px] flex-shrink-0 flex-col" style={{ height: '100%' }}>
+
+            {/* 이미지 — flex-1으로 나머지 공간 전부 차지 */}
+            <div className="flex-1 relative overflow-hidden min-h-0">
+              {loading || !detail ? (
+                <div className={`absolute inset-0 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]}`} />
+              ) : detail.thumbnailUrl ? (
+                <img
+                  src={detail.thumbnailUrl}
+                  alt={detail.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className={`absolute inset-0 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} flex flex-col items-center justify-center gap-4`}>
+                  <div className="absolute top-8 left-8 w-28 h-28 rounded-full bg-white/5 blur-2xl" />
+                  <div className="absolute bottom-16 right-4 w-20 h-20 rounded-full bg-white/5 blur-2xl" />
+                  <span className="relative text-8xl opacity-25">🔎</span>
+                  {detail && (
+                    <div className="relative text-center px-5">
+                      <p className="text-white/40 text-[11px] uppercase tracking-widest">Murder Mystery</p>
+                      <p className="text-white font-black text-xl mt-2 leading-tight">{detail.title}</p>
+                    </div>
+                  )}
                 </div>
-                <div className="w-px h-8 bg-white/10" />
-                <button
-                  className="text-center group"
-                  onClick={handleLike}
-                >
-                  <p className={`font-bold text-base transition-colors ${liked ? 'text-red-400' : 'text-white'}`}>
-                    {localLikes.toLocaleString()}
-                  </p>
-                  <p className="text-gray-500 text-[11px] mt-0.5 group-hover:text-red-400 transition-colors">
-                    {liked ? '❤️ 좋아요' : '🤍 좋아요'}
-                  </p>
-                </button>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="text-center">
-                  <p className="text-white font-bold text-base">{comments.length}</p>
-                  <p className="text-gray-500 text-[11px] mt-0.5">댓글</p>
-                </div>
+              )}
+            </div>
+
+            {/* 통계 바 — 고정 높이 */}
+            <div className="flex-shrink-0 bg-black/70 border-t border-white/10 px-4 py-3 flex items-center justify-around">
+              <div className="text-center">
+                <p className="text-white font-bold text-base">{(detail?.playCount ?? 0).toLocaleString()}</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">플레이</p>
               </div>
-            )}
+              <div className="w-px h-8 bg-white/10" />
+              <button className="text-center group" onClick={handleLike}>
+                <p className={`font-bold text-base transition-colors ${liked ? 'text-red-400' : 'text-white group-hover:text-red-300'}`}>
+                  {localLikes.toLocaleString()}
+                </p>
+                <p className="text-gray-500 text-[11px] mt-0.5 group-hover:text-red-400 transition-colors">
+                  {liked ? '❤️ 좋아요' : '🤍 좋아요'}
+                </p>
+              </button>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="text-center">
+                <p className="text-white font-bold text-base">{comments.length}</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">댓글</p>
+              </div>
+            </div>
           </div>
 
-          {/* ── 오른쪽: 정보 패널 ── */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            {/* 상단 헤더 */}
-            <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-white/10">
-              <div className="flex items-start justify-between gap-3">
+          {/* ══ 오른쪽: 정보 패널 — flex col 고정 ══ */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ height: '100%' }}>
+
+            {/* 헤더 (shrink 안 함) */}
+            <div className="flex-shrink-0 px-5 pt-5 border-b border-white/10">
+              <div className="flex items-start justify-between gap-3 pb-3">
                 <div className="min-w-0">
                   {loading || !detail ? (
-                    <div className="h-6 w-48 bg-white/10 rounded animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-5 w-20 bg-white/10 rounded-full animate-pulse" />
+                      <div className="h-7 w-48 bg-white/10 rounded animate-pulse" />
+                    </div>
                   ) : (
                     <>
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${DIFFICULTY_STYLE[diffKey] ?? DIFFICULTY_STYLE['MEDIUM']}`}>
                           {DIFFICULTY_LABEL[diffKey] ?? detail.difficulty}
                         </span>
@@ -319,82 +314,82 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                 </button>
               </div>
 
-              {/* 탭 */}
-              {!loading && detail && (
-                <div className="flex gap-0 mt-3">
-                  {(['소개', '댓글'] as TabType[]).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-1.5 text-sm font-semibold transition-all border-b-2 ${
-                        activeTab === tab
-                          ? 'border-white text-white'
-                          : 'border-transparent text-gray-500 hover:text-gray-300'
-                      }`}
-                    >
-                      {tab}
-                      {tab === '댓글' && (
-                        <span className="ml-1.5 text-xs text-gray-500">{comments.length}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* 탭 — 항상 렌더 (크기 고정의 핵심) */}
+              <div className={`flex gap-0 transition-opacity duration-150 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                {(['소개', '댓글'] as TabType[]).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 ${
+                      activeTab === tab
+                        ? 'border-white text-white'
+                        : 'border-transparent text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    {tab}
+                    {tab === '댓글' && (
+                      <span className="ml-1.5 text-xs text-gray-500">{comments.length}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* 탭 콘텐츠 */}
-            <div className="flex-1 overflow-y-auto">
+            {/* 콘텐츠 영역 — flex-1, 내부에서 position absolute로 스크롤 제어 */}
+            <div className="flex-1 min-h-0 relative overflow-hidden">
               {loading ? (
-                <div className="flex items-center justify-center h-full text-gray-500 py-12">
+                <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
                   불러오는 중...
                 </div>
               ) : !detail ? null : activeTab === '소개' ? (
-                /* ── 소개 탭 ── */
-                <div className="p-5 space-y-4">
-                  {/* 게임 설명 */}
-                  <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                    <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">게임 설명</p>
-                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {detail.previewNarrative}
-                    </p>
-                  </div>
 
-                  {/* 용의자 */}
-                  {detail.suspectNames.length > 0 && (
+                /* ── 소개 탭 전체 스크롤 ── */
+                <div className="absolute inset-0 overflow-y-auto">
+                  <div className="p-5 space-y-4">
+                    <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">게임 설명</p>
+                      <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {detail.previewNarrative}
+                      </p>
+                    </div>
+
+                    {detail.suspectNames.length > 0 && (
+                      <div>
+                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">용의자</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {detail.suspectNames.map((name) => (
+                            <span
+                              key={name}
+                              className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300 hover:border-white/25 transition-colors"
+                            >
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
-                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">용의자</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {detail.suspectNames.map((name) => (
-                          <span
-                            key={name}
-                            className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300 hover:border-white/25 transition-colors"
-                          >
-                            {name}
-                          </span>
+                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">비슷한 사건들</p>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {[0, 1, 2].map((i) => (
+                          <div key={i} className="flex-shrink-0 w-20 h-14 rounded-lg bg-white/5 border border-white/10 animate-pulse" />
                         ))}
                       </div>
                     </div>
-                  )}
-
-                  {/* 비슷한 사건들 placeholder */}
-                  <div>
-                    <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">비슷한 사건들</p>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="flex-shrink-0 w-20 h-14 rounded-lg bg-white/5 border border-white/10 animate-pulse" />
-                      ))}
-                    </div>
                   </div>
                 </div>
+
               ) : (
-                /* ── 댓글 탭 ── */
-                <div className="p-5 space-y-4">
-                  {/* 댓글 입력 */}
-                  <div className="flex gap-2">
-                    <div className="w-8 h-8 flex-shrink-0 rounded-full bg-accent-pink/20 border border-accent-pink/30 flex items-center justify-center text-xs font-bold text-accent-pink">
-                      나
-                    </div>
-                    <div className="flex-1 flex gap-2">
+
+                /* ── 댓글 탭: 입력창 고정 + 목록만 스크롤 ── */
+                <div className="absolute inset-0 flex flex-col">
+                  {/* 댓글 입력창 — 고정 */}
+                  <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
+                    <div className="flex gap-2 items-center">
+                      <div className="w-8 h-8 flex-shrink-0 rounded-full bg-accent-pink/20 border border-accent-pink/30 flex items-center justify-center text-xs font-bold text-accent-pink">
+                        나
+                      </div>
                       <input
                         ref={commentInputRef}
                         className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-xl px-3 py-2 text-sm outline-none transition-all placeholder:text-gray-600"
@@ -406,57 +401,58 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                       <button
                         onClick={handleAddComment}
                         disabled={!commentInput.trim()}
-                        className="px-3 py-2 rounded-xl bg-accent-pink text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
+                        className="flex-shrink-0 px-3 py-2 rounded-xl bg-accent-pink text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
                       >
                         등록
                       </button>
                     </div>
                   </div>
 
-                  {/* 댓글 목록 */}
-                  <div className="space-y-3">
+                  {/* 댓글 목록 — 이 영역만 스크롤 */}
+                  <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
                     {comments.length === 0 ? (
-                      <p className="text-center text-gray-500 text-sm py-6">첫 댓글을 남겨보세요!</p>
+                      <p className="text-center text-gray-500 text-sm py-8">첫 댓글을 남겨보세요!</p>
                     ) : (
-                      comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3 group">
-                          <div className="w-8 h-8 flex-shrink-0 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-semibold text-gray-300">
-                            {comment.author[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-semibold text-gray-200">{comment.author}</span>
-                              <span className="text-[11px] text-gray-600">{comment.createdAt}</span>
+                      <div className="space-y-5">
+                        {comments.map((comment) => (
+                          <div key={comment.id} className="flex gap-3">
+                            <div className="w-8 h-8 flex-shrink-0 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-semibold text-gray-300">
+                              {comment.author[0]}
                             </div>
-                            <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <button
-                                onClick={() => handleCommentLike(comment.id)}
-                                className={`flex items-center gap-1 text-[11px] transition-colors ${
-                                  commentLikes[comment.id] ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
-                                }`}
-                              >
-                                {commentLikes[comment.id] ? '❤️' : '🤍'}
-                                <span>{comment.likes}</span>
-                              </button>
-                              <button className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors">
-                                답글
-                              </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold text-gray-200">{comment.author}</span>
+                                <span className="text-[11px] text-gray-600">{comment.createdAt}</span>
+                              </div>
+                              <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
+                              <div className="flex items-center gap-3 mt-2">
+                                <button
+                                  onClick={() => handleCommentLike(comment.id)}
+                                  className={`flex items-center gap-1 text-[11px] transition-colors ${
+                                    commentLikes[comment.id] ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
+                                  }`}
+                                >
+                                  {commentLikes[comment.id] ? '❤️' : '🤍'}
+                                  <span>{comment.likes}</span>
+                                </button>
+                                <button className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors">
+                                  답글
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 하단 버튼 */}
+            {/* 하단 버튼 — 항상 하단 고정 */}
             {!loading && detail && (
               <div className="flex-shrink-0 border-t border-white/10 p-4">
                 <div className="flex gap-2">
-                  {/* 좋아요 버튼 */}
                   <button
                     onClick={handleLike}
                     className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
