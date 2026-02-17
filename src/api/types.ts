@@ -1,4 +1,4 @@
-export type GameMode = 'BASIC' | 'AI' | 'USER';
+﻿export type GameMode = 'BASIC' | 'AI' | 'USER';
 export type CaseSourceType = 'BASIC_TEMPLATE' | 'USER_PUBLISHED' | 'AI_PROMPT';
 export type SessionStatus = 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED';
 export type UserRole = 'USER' | 'ADMIN';
@@ -77,16 +77,10 @@ export interface GameSessionResponse {
   mode: GameMode;
   caseSourceType: CaseSourceType;
   sourceRefId: number | null;
-  questionLimit: number;
-  questionsUsed: number;
-  remainingQuestions: number;
   status: SessionStatus;
   generatedStoryJson: string;
   messages: MessageLogItem[];
   evidence: EvidenceItem[];
-  actionLimit: number;
-  actionsUsed: number;
-  remainingActions: number;
   currentLocation: string | null;
   gameStartHour: number;
   gameEndHour: number;
@@ -100,14 +94,11 @@ export interface SessionSummaryResponse {
   caseSourceType: CaseSourceType;
   sourceRefId: number | null;
   status: SessionStatus;
-  questionLimit: number;
-  questionsUsed: number;
-  remainingQuestions: number;
   startedAt: string;
 }
 
 export interface AskQuestionRequest { question: string; suspectName: string; }
-export interface AskQuestionResponse { answer: string; remainingQuestions: number; suspectName: string; }
+export interface AskQuestionResponse { answer: string; suspectName: string; }
 
 export interface AccuseRequest { suspectName: string; }
 export interface AccuseResponse {
@@ -122,12 +113,9 @@ export interface MoveRequest { location: string; }
 export interface MoveResponse {
   location: string;
   availableSuspects: string[];
-  actionsUsed: number;
-  remainingActions: number;
 }
 
 export interface InvestigateResponse {
   evidenceFound: EvidenceItem[];
-  actionsUsed: number;
-  remainingActions: number;
 }
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AccuseModal } from '../components/AccuseModal';
 import { ActionButtons } from '../components/ActionButtons';
@@ -41,7 +41,6 @@ function extractLocations(story: StoryData): string[] {
   return Array.from(locationSet);
 }
 
-/** Each suspect belongs to their first timeline location only (no duplicates) */
 function buildSuspectLocationMap(story: StoryData): Map<string, SuspectProfile[]> {
   const map = new Map<string, SuspectProfile[]>();
   for (const s of story.suspects ?? []) {
@@ -58,10 +57,18 @@ function getSuspectsAtLocation(suspectMap: Map<string, SuspectProfile[]>, locati
   return suspectMap.get(location) ?? [];
 }
 
+function statusLabel(status: string): string {
+  if (status === 'ACTIVE') return '진행 중';
+  if (status === 'WON') return '해결';
+  if (status === 'LOST') return '실패';
+  return '종료';
+}
+
 export function PlayPage() {
   const { sessionId } = useParams();
   const id = Number(sessionId);
   const navigate = useNavigate();
+
   const current = useSessionStore((s) => s.current);
   const load = useSessionStore((s) => s.load);
   const ask = useSessionStore((s) => s.ask);
@@ -78,58 +85,73 @@ export function PlayPage() {
   const [loading, setLoading] = useState(false);
   const [investigating, setInvestigating] = useState(false);
 
-  useEffect(() => { void load(id); }, [id, load]);
+  useEffect(() => {
+    void load(id);
+  }, [id, load]);
 
-  const story = useMemo(() => current ? parseStory(current.generatedStoryJson) : {}, [current]);
+  const story = useMemo(() => (current ? parseStory(current.generatedStoryJson) : {}), [current]);
   const locations = useMemo(() => extractLocations(story), [story]);
-  const suspectNames = useMemo(() => (story.suspects ?? []).map(s => s.name), [story]);
+  const suspectNames = useMemo(() => (story.suspects ?? []).map((s) => s.name), [story]);
   const currentLocation = current?.currentLocation ?? null;
   const suspectMap = useMemo(() => buildSuspectLocationMap(story), [story]);
   const suspectsHere = useMemo(() => getSuspectsAtLocation(suspectMap, currentLocation), [suspectMap, currentLocation]);
 
-  // Check if game time is up
-  const isTimeUp = current
-    ? current.gameMinutesUsed >= (current.gameEndHour - current.gameStartHour) * 60
-    : false;
+  const totalMinutes = current ? (current.gameEndHour - current.gameStartHour) * 60 : 0;
+  const remainingMinutes = current ? Math.max(0, totalMinutes - current.gameMinutesUsed) : 0;
+  const isTimeUp = current ? current.gameMinutesUsed >= totalMinutes : false;
+  const isActive = current?.status === 'ACTIVE';
 
-  // Navigate to result if status changed to non-active
   useEffect(() => {
     if (current && current.status !== 'ACTIVE') {
       navigate(`/result/${id}`);
     }
   }, [current?.status, id, navigate]);
 
-  // Clear investigate result when location changes
   useEffect(() => {
     setFoundEvidence(null);
   }, [currentLocation]);
 
-  // Filter messages for selected suspect
   const filteredMessages = useMemo(() => {
     if (!current || !selectedSuspect) return [];
     const msgs = current.messages;
     const result: typeof msgs = [];
-    const prefix = `[${selectedSuspect}에게] `;
+    const prefix = `[${selectedSuspect}`;
+
     for (let i = 0; i < msgs.length; i++) {
       const m = msgs[i];
       if (m.role === 'SYSTEM') continue;
-      if (m.role === 'PLAYER') {
-        if (m.content.startsWith(prefix)) {
-          result.push(m);
-          if (i + 1 < msgs.length && msgs[i + 1].role === 'SUSPECT') {
-            result.push(msgs[i + 1]);
-            i++;
-          }
+      if (m.role === 'PLAYER' && m.content.startsWith(prefix)) {
+        result.push(m);
+        if (i + 1 < msgs.length && msgs[i + 1].role === 'SUSPECT') {
+          result.push(msgs[i + 1]);
+          i++;
         }
       }
     }
     return result;
   }, [current?.messages, selectedSuspect]);
 
-  const selectedProfile = useMemo(
-    () => (story.suspects ?? []).find(s => s.name === selectedSuspect),
-    [story, selectedSuspect]
-  );
+  const selectedProfile = useMemo(() => (story.suspects ?? []).find((s) => s.name === selectedSuspect), [story, selectedSuspect]);
+
+  const recentEvents = useMemo(() => {
+    if (!current) return [] as { id: string; label: string; detail: string }[];
+    const entries = current.messages
+      .filter((m) => m.role !== 'SYSTEM')
+      .slice(-5)
+      .map((m) => ({
+        id: `msg-${m.id}`,
+        label: m.role === 'PLAYER' ? '플레이어 질문' : '용의자 답변',
+        detail: m.content,
+      }));
+
+    const evidenceEntries = current.evidence.slice(-2).map((e) => ({
+      id: `ev-${e.id}`,
+      label: '증거 확보',
+      detail: `${e.title}: ${e.detail}`,
+    }));
+
+    return [...entries, ...evidenceEntries].slice(-6).reverse();
+  }, [current]);
 
   async function handleMove(location: string) {
     try {
@@ -155,9 +177,9 @@ export function PlayPage() {
     if (suspectsHere.length === 1) {
       setSelectedSuspect(suspectsHere[0].name);
       setViewMode('conversation');
-    } else {
-      setShowCharacterModal(true);
+      return;
     }
+    setShowCharacterModal(true);
   }
 
   function handleCharacterSelect(name: string) {
@@ -182,17 +204,11 @@ export function PlayPage() {
   }
 
   if (!current) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] text-gray-400">
-        세션을 불러오는 중...
-      </div>
-    );
+    return <div className="min-h-[60vh] grid place-items-center text-gray-400">세션 불러오는 중...</div>;
   }
 
-  const caseTitle = story.title ?? `사건 #${current.id}`;
-  const isActive = current.status === 'ACTIVE';
+  const caseTitle = story.title ?? `Case #${current.id}`;
 
-  // VN Conversation View
   if (viewMode === 'conversation' && selectedProfile) {
     return (
       <VNConversationView
@@ -210,123 +226,154 @@ export function PlayPage() {
     );
   }
 
-  // Main View
   return (
-    <div className="flex flex-col h-[calc(100vh-72px)] bg-gradient-to-b from-[#0a0a12] to-[#111118]">
-      {/* Header with Game Clock */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-dark-border bg-dark-bg/80 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">📋</span>
-          <h1 className="font-bold text-white text-sm md:text-base truncate max-w-[200px] md:max-w-none">{caseTitle}</h1>
-        </div>
-        {isActive ? (
-          <GameClock
-            gameStartHour={current.gameStartHour}
-            gameEndHour={current.gameEndHour}
-            gameMinutesUsed={current.gameMinutesUsed}
-            currentGameTime={current.currentGameTime}
-          />
-        ) : (
-          <span className="text-sm text-gray-500 font-medium">{current.status}</span>
-        )}
-      </div>
-
-      {/* Current Location Info */}
-      <div className="px-4 md:px-6 py-3 border-b border-dark-border/50 bg-dark-bg/30">
-        <div className="flex items-center gap-2 text-sm">
-          <span>📍</span>
-          <span className="text-gray-400">현재 장소:</span>
-          <span className="text-white font-semibold">{currentLocation ?? '알 수 없음'}</span>
-        </div>
-      </div>
-
-      {/* Time-up Banner */}
-      {isTimeUp && isActive && (
-        <div className="px-4 md:px-6 py-3 bg-red-900/30 border-b border-red-700/40">
-          <div className="text-sm text-red-300 font-medium text-center">
-            게임 시간이 종료되었습니다! 범인을 지목하세요.
-          </div>
-        </div>
-      )}
-
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
-        {/* Suspects at this location */}
-        <div className="bg-dark-surface/50 border border-dark-border rounded-xl p-4">
-          <div className="text-xs text-gray-500 mb-2 font-medium">이 장소의 용의자</div>
-          {suspectsHere.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {suspectsHere.map((s) => (
-                <div key={s.name} className="flex items-center gap-2 bg-dark-card px-3 py-2 rounded-lg border border-dark-border">
-                  <div className="w-8 h-8 rounded-full bg-dark-surface flex items-center justify-center flex-shrink-0">
-                    <svg viewBox="0 0 80 80" className="w-full h-full" fill="none">
-                      <circle cx="40" cy="28" r="14" fill="#555" />
-                      <path d="M16 72 C16 52 28 44 40 44 C52 44 64 52 64 72" fill="#555" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-200">{s.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {s.age && `${s.age}세`}
-                      {s.personality && ` · ${s.personality}`}
-                    </div>
-                  </div>
-                </div>
-              ))}
+    <div className="relative h-[calc(100vh-72px)] overflow-hidden rounded-2xl border border-white/10 bg-[#0c0f14]">
+      <div className="relative z-10 flex h-full flex-col">
+        <header className="border-b border-white/10 bg-black/40 px-4 md:px-6 py-3 backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">진행 중인 수사</p>
+              <h1 className="text-lg md:text-xl font-extrabold text-white">{caseTitle}</h1>
             </div>
-          ) : (
-            <p className="text-sm text-gray-500 italic">이 장소에 용의자가 없습니다</p>
-          )}
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 rounded-md text-xs font-bold border ${isActive ? 'border-emerald-400/60 text-emerald-300 bg-emerald-900/20' : 'border-red-400/60 text-red-300 bg-red-900/20'}`}>
+                {statusLabel(current.status)}
+              </span>
+              <GameClock
+                gameStartHour={current.gameStartHour}
+                gameEndHour={current.gameEndHour}
+                gameMinutesUsed={current.gameMinutesUsed}
+                currentGameTime={current.currentGameTime}
+              />
+            </div>
+          </div>
+        </header>
+
+        <div className="border-b border-white/10 bg-black/30 px-4 md:px-6 py-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+            <StatCard label="현재 위치" value={currentLocation ?? '알 수 없음'} tone="cyan" />
+            <StatCard
+              label="남은 시간"
+              value={`${Math.floor(remainingMinutes / 60)}시간 ${String(remainingMinutes % 60).padStart(2, '0')}분`}
+              tone={isTimeUp ? 'rose' : 'amber'}
+            />
+            <StatCard label="수집 단서" value={`${current.evidence.length}개`} tone="emerald" />
+          </div>
         </div>
 
-        {/* Investigate Result Banner */}
-        {foundEvidence !== null && (
-          <div className={`rounded-xl p-3 border ${foundEvidence.length > 0 ? 'bg-amber-900/30 border-amber-700/40' : 'bg-gray-800/50 border-dark-border'}`}>
-            {foundEvidence.length > 0 ? (
-              <>
-                <div className="text-xs text-amber-300 font-medium mb-1">증거 발견!</div>
-                {foundEvidence.map((e) => (
-                  <div key={e.id} className="text-xs text-amber-200 ml-2">
-                    • <strong>{e.title}</strong> — {e.detail}
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-4 pb-24">
+          <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-4">
+            <section className="space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-gray-100">수사 컨트롤</h2>
+                  <button
+                    onClick={() => setShowLocationModal(true)}
+                    className="text-xs px-3 py-1.5 rounded-md border border-gray-500/60 text-gray-200 hover:bg-white/10 transition-colors"
+                    disabled={!isActive}
+                  >
+                    위치 이동
+                  </button>
+                </div>
+                <p className="mt-2 text-sm text-gray-300 leading-relaxed">
+                  장소를 이동하고 용의자를 심문해 단서를 확보한 뒤, 시간이 끝나기 전에 범인을 지목하세요.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {locations.map((loc) => (
+                    <span
+                      key={loc}
+                      className={`px-2 py-1 rounded-full text-xs border ${loc === currentLocation ? 'border-gray-300/70 bg-white/10 text-gray-100' : 'border-white/15 text-gray-300'}`}
+                    >
+                      {loc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-white">현재 장소의 용의자</h2>
+                  <span className="text-xs text-gray-400">{suspectsHere.length}명</span>
+                </div>
+
+                {suspectsHere.length === 0 ? (
+                  <p className="mt-4 text-sm text-gray-500">이 장소에는 용의자가 없습니다.</p>
+                ) : (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {suspectsHere.map((s) => (
+                      <button
+                        key={s.name}
+                        className="text-left rounded-xl border border-white/10 bg-zinc-900/70 p-3 hover:border-gray-300/40 hover:-translate-y-0.5 transition-all"
+                        onClick={() => handleCharacterSelect(s.name)}
+                        disabled={!isActive}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold text-gray-100">{s.name}</p>
+                          <span className="text-[10px] uppercase tracking-wide text-gray-300">대화</span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                          {s.age ? `${s.age}세` : '나이 미상'}{s.personality ? ` / ${s.personality}` : ''}
+                        </p>
+                        {s.background && <p className="mt-1 text-xs text-gray-500 line-clamp-2">{s.background}</p>}
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </>
-            ) : (
-              <div className="text-sm text-gray-400 text-center py-1">
-                🔍 이 장소에서 새로운 증거를 찾지 못했습니다.
+                )}
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Discovered Evidence */}
-        {current.evidence.length > 0 && (
-          <div className="bg-dark-surface/50 border border-dark-border rounded-xl p-4">
-            <div className="text-xs text-gray-500 mb-2 font-medium">발견된 증거</div>
-            {current.evidence.map((e) => (
-              <div key={e.id} className="text-sm text-gray-300 ml-1 py-0.5">
-                <span className="text-accent-pink mr-1">•</span>
-                <strong>{e.title}</strong>
-                <span className="text-gray-500 ml-1">— {e.detail}</span>
+              {foundEvidence !== null && (
+                <div className={`rounded-xl p-3 border ${foundEvidence.length > 0 ? 'bg-amber-900/30 border-amber-700/40' : 'bg-gray-800/50 border-dark-border'}`}>
+                  {foundEvidence.length > 0 ? (
+                    <>
+                      <div className="text-xs text-amber-300 font-medium mb-1">새 단서 발견</div>
+                      {foundEvidence.map((e) => (
+                        <div key={e.id} className="text-xs text-amber-200 ml-2">
+                          - <strong>{e.title}</strong> : {e.detail}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-400 text-center py-1">이 장소에서 추가 단서를 찾지 못했습니다.</div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <aside className="space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <h3 className="text-sm font-semibold text-white">수사 로그</h3>
+                <div className="mt-3 space-y-2 max-h-[330px] overflow-auto pr-1">
+                  {recentEvents.length === 0 ? (
+                    <p className="text-xs text-gray-500">아직 기록이 없습니다.</p>
+                  ) : (
+                    recentEvents.map((item) => (
+                      <div key={item.id} className="rounded-lg border border-white/10 bg-black/30 p-2.5">
+                        <p className="text-[11px] uppercase tracking-wide text-gray-300">{item.label}</p>
+                        <p className="mt-1 text-xs text-gray-300 line-clamp-3">{item.detail}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="mt-3 text-[11px] text-gray-500">
+                  최근 질문, 답변, 단서 확보 기록을 시간 순으로 보여줍니다.
+                </p>
               </div>
-            ))}
+            </aside>
           </div>
-        )}
+        </main>
+
+        <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/60 backdrop-blur-md">
+          <ActionButtons
+            onMove={() => setShowLocationModal(true)}
+            onInvestigate={handleInvestigate}
+            onTalk={handleTalk}
+            onAccuse={() => setAccuseOpen(true)}
+            disabled={!isActive}
+            investigating={investigating}
+          />
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="border-t border-dark-border bg-dark-bg/80 backdrop-blur">
-        <ActionButtons
-          onMove={() => setShowLocationModal(true)}
-          onInvestigate={handleInvestigate}
-          onTalk={handleTalk}
-          onAccuse={() => setAccuseOpen(true)}
-          disabled={!isActive}
-          investigating={investigating}
-        />
-      </div>
-
-      {/* Modals */}
       <LocationSelectModal
         open={showLocationModal}
         locations={locations}
@@ -350,3 +397,21 @@ export function PlayPage() {
     </div>
   );
 }
+
+function StatCard({ label, value, tone }: { label: string; value: string; tone: 'cyan' | 'violet' | 'emerald' | 'amber' | 'rose' }) {
+  const toneMap: Record<string, string> = {
+    cyan: 'bg-slate-800/70 border-slate-500/40 text-slate-100',
+    violet: 'bg-slate-800/70 border-slate-500/40 text-slate-100',
+    emerald: 'bg-slate-800/70 border-slate-500/40 text-slate-100',
+    amber: 'bg-zinc-800/80 border-zinc-500/40 text-zinc-100',
+    rose: 'bg-red-950/40 border-red-500/40 text-red-100',
+  };
+
+  return (
+    <div className={`rounded-xl border p-2.5 ${toneMap[tone]}`}>
+      <p className="text-[10px] uppercase tracking-wide opacity-80">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-white truncate">{value}</p>
+    </div>
+  );
+}
+
