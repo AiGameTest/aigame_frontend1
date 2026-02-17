@@ -12,6 +12,7 @@ import { ResultPage } from './pages/ResultPage';
 import { CreatePage } from './pages/CreatePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AiModePage } from './pages/AiModePage';
+import { CoinShopPage } from './pages/CoinShopPage';
 
 export default function App() {
   const bootstrap = useAuthStore((s) => s.bootstrap);
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/result/:sessionId" element={<ProtectedRoute><ResultPage /></ProtectedRoute>} />
         <Route path="/create" element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
         <Route path="/me" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/coins" element={<ProtectedRoute><CoinShopPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppLayout>

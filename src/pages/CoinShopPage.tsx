@@ -1,0 +1,351 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+
+// ── 코인 패키지 정의 ─────────────────────────────────────
+interface CoinPackage {
+  id: string;
+  coins: number;
+  price: number;       // 원
+  bonus: number;       // 보너스 코인
+  tag?: string;
+  popular?: boolean;
+  best?: boolean;
+}
+
+const PACKAGES: CoinPackage[] = [
+  { id: 'sm',  coins: 100,  price: 1100,  bonus: 0,   tag: '입문' },
+  { id: 'md',  coins: 300,  price: 3000,  bonus: 30,  tag: '기본' },
+  { id: 'lg',  coins: 600,  price: 5500,  bonus: 100, tag: '인기', popular: true },
+  { id: 'xl',  coins: 1200, price: 9900,  bonus: 300, tag: '베스트', best: true },
+  { id: 'xxl', coins: 3000, price: 22000, bonus: 1000, tag: '프리미엄' },
+];
+
+// 더미 거래 내역
+interface TxRecord { id: number; desc: string; amount: number; date: string; type: 'charge' | 'use'; }
+const DUMMY_TX: TxRecord[] = [
+  { id: 1, desc: 'AI 사건 생성', amount: -20, date: '2026-02-17', type: 'use' },
+  { id: 2, desc: '코인 충전 (600C 패키지)', amount: 700, date: '2026-02-15', type: 'charge' },
+  { id: 3, desc: '기본 사건 플레이', amount: -10, date: '2026-02-13', type: 'use' },
+  { id: 4, desc: '코인 충전 (300C 패키지)', amount: 330, date: '2026-02-10', type: 'charge' },
+];
+
+// ── 서브 컴포넌트 ─────────────────────────────────────────
+function CoinBadge({ value, size = 'md' }: { value: number; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClass = size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-sm' : 'text-xl';
+  return (
+    <span className={`font-black text-accent-pink ${sizeClass}`}>
+      {value.toLocaleString()}
+      <span className="text-xs font-semibold ml-0.5 opacity-70">C</span>
+    </span>
+  );
+}
+
+function PackageCard({
+  pkg,
+  selected,
+  onClick,
+}: {
+  pkg: CoinPackage;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const total = pkg.coins + pkg.bonus;
+  const perCoin = (pkg.price / total).toFixed(1);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`relative w-full text-left rounded-2xl border p-4 transition-all duration-200 group
+        ${selected
+          ? 'bg-accent-pink/10 border-accent-pink/60 shadow-[0_0_24px_rgba(255,77,109,0.15)]'
+          : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.05]'
+        }
+        ${pkg.popular || pkg.best ? 'ring-1 ' + (selected ? 'ring-accent-pink/40' : 'ring-white/10') : ''}
+      `}
+    >
+      {/* 뱃지 */}
+      {(pkg.popular || pkg.best) && (
+        <div className={`absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[11px] font-bold border
+          ${pkg.best
+            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+            : 'bg-accent-pink/20 text-accent-pink border-accent-pink/40'
+          }`}
+        >
+          {pkg.best ? '🏆 베스트' : '🔥 인기'}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="flex items-baseline gap-1.5">
+            <CoinBadge value={pkg.coins} />
+            {pkg.bonus > 0 && (
+              <span className="text-xs text-emerald-400 font-semibold">+{pkg.bonus} 보너스</span>
+            )}
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-[11px] text-gray-500">합계 {total.toLocaleString()}C</span>
+            <span className="text-[11px] text-gray-600">·</span>
+            <span className="text-[11px] text-gray-500">개당 {perCoin}원</span>
+          </div>
+        </div>
+
+        <div className="text-right">
+          <p className="text-base font-black text-white">{pkg.price.toLocaleString()}원</p>
+          <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ml-auto transition-all
+            ${selected ? 'border-accent-pink bg-accent-pink' : 'border-white/20'}`}
+          >
+            {selected && (
+              <svg viewBox="0 0 10 8" className="w-2.5 h-2.5" fill="none">
+                <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ── 메인 페이지 ───────────────────────────────────────────
+export function CoinShopPage() {
+  const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
+  const [selected, setSelected] = useState<string>('lg');
+  const [payMethod, setPayMethod] = useState<'card' | 'kakao' | 'naver'>('card');
+  const [purchasing, setPurchasing] = useState(false);
+  const [tab, setTab] = useState<'shop' | 'history'>('shop');
+  const [successPkg, setSuccessPkg] = useState<CoinPackage | null>(null);
+
+  const selectedPkg = PACKAGES.find((p) => p.id === selected)!;
+
+  async function handlePurchase() {
+    if (purchasing) return;
+    setPurchasing(true);
+    // TODO: 실제 결제 API 연동
+    await new Promise((r) => setTimeout(r, 1200));
+    setSuccessPkg(selectedPkg);
+    setPurchasing(false);
+  }
+
+  // 결제 성공 화면
+  if (successPkg) {
+    return (
+      <div className="max-w-md mx-auto py-20 px-4 text-center space-y-6">
+        <div className="relative inline-block">
+          <div className="w-24 h-24 rounded-full bg-accent-pink/20 border border-accent-pink/30 flex items-center justify-center mx-auto text-4xl">
+            🎉
+          </div>
+          <div className="absolute inset-0 rounded-full animate-ping bg-accent-pink/10" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-white">충전 완료!</h2>
+          <p className="text-gray-400 mt-2">
+            <span className="text-accent-pink font-bold">{(successPkg.coins + successPkg.bonus).toLocaleString()}C</span>가 지급되었습니다.
+          </p>
+        </div>
+        <div className="rounded-2xl bg-white/5 border border-white/10 px-6 py-4 space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-gray-400">기본 코인</span><span className="text-white font-semibold">{successPkg.coins.toLocaleString()}C</span></div>
+          {successPkg.bonus > 0 && <div className="flex justify-between"><span className="text-emerald-400">보너스</span><span className="text-emerald-300 font-semibold">+{successPkg.bonus.toLocaleString()}C</span></div>}
+          <div className="border-t border-white/10 pt-2 flex justify-between"><span className="text-gray-400">결제 금액</span><span className="text-white font-bold">{successPkg.price.toLocaleString()}원</span></div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setSuccessPkg(null)} className="flex-1 py-3 rounded-xl border border-white/20 text-gray-300 hover:text-white hover:border-white/30 transition-colors text-sm font-semibold">
+            더 충전하기
+          </button>
+          <button onClick={() => navigate('/')} className="flex-1 py-3 rounded-xl bg-accent-pink text-white font-bold text-sm hover:opacity-90 transition-opacity">
+            게임 시작 →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
+
+      {/* ── 상단 헤더 ── */}
+      <div className="rounded-2xl overflow-hidden border border-white/10 relative">
+        {/* 배경 그라디언트 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a14] via-[#12091c] to-[#0a1020] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent-pink/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
+
+        <div className="relative px-6 py-6 flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs uppercase tracking-[0.2em] text-accent-pink/70 font-semibold">Coin Shop</span>
+            </div>
+            <h1 className="text-2xl font-black text-white">코인 충전소</h1>
+            <p className="text-sm text-gray-400 mt-1">코인으로 AI 사건 생성 및 특별 기능을 이용하세요.</p>
+          </div>
+
+          {/* 현재 보유 코인 */}
+          <div className="flex-shrink-0 text-right">
+            <p className="text-[11px] uppercase tracking-wide text-gray-500">보유 코인</p>
+            <div className="mt-1 flex items-center gap-1.5 justify-end">
+              <span className="text-2xl font-black text-accent-pink">
+                {(user?.coins ?? 0).toLocaleString()}
+              </span>
+              <span className="text-sm text-accent-pink/70 font-semibold">C</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 탭 ── */}
+      <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/8">
+        {(['shop', 'history'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+              tab === t
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {t === 'shop' ? '💳 충전하기' : '📋 사용 내역'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'shop' ? (
+        <>
+          {/* ── 코인 사용처 안내 ── */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: '🤖', label: 'AI 사건 생성', cost: '20C' },
+              { icon: '🔮', label: '힌트 사용', cost: '5C' },
+              { icon: '⭐', label: '프리미엄 사건', cost: '10C' },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl bg-white/[0.03] border border-white/8 p-3 text-center">
+                <span className="text-2xl">{item.icon}</span>
+                <p className="text-[11px] text-gray-400 mt-1.5 leading-tight">{item.label}</p>
+                <p className="text-xs text-accent-pink font-bold mt-1">{item.cost}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── 패키지 선택 ── */}
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">패키지 선택</p>
+            <div className="space-y-2.5">
+              {PACKAGES.map((pkg) => (
+                <PackageCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  selected={selected === pkg.id}
+                  onClick={() => setSelected(pkg.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ── 결제 수단 ── */}
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">결제 수단</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { id: 'card',  label: '신용카드',  icon: '💳' },
+                { id: 'kakao', label: '카카오페이', icon: '🟡' },
+                { id: 'naver', label: '네이버페이', icon: '🟢' },
+              ] as const).map((method) => (
+                <button
+                  key={method.id}
+                  onClick={() => setPayMethod(method.id)}
+                  className={`py-3 rounded-xl border text-sm font-semibold transition-all flex flex-col items-center gap-1
+                    ${payMethod === method.id
+                      ? 'bg-white/10 border-white/30 text-white'
+                      : 'bg-white/[0.03] border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                    }`}
+                >
+                  <span className="text-xl">{method.icon}</span>
+                  <span className="text-[11px]">{method.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 주문 요약 + 결제 버튼 ── */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-3">
+            <p className="text-xs uppercase tracking-widest text-gray-500">주문 요약</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">패키지</span>
+                <span className="text-white font-semibold">{selectedPkg.coins.toLocaleString()}C {selectedPkg.tag && `(${selectedPkg.tag})`}</span>
+              </div>
+              {selectedPkg.bonus > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-emerald-400">보너스 코인</span>
+                  <span className="text-emerald-300 font-semibold">+{selectedPkg.bonus.toLocaleString()}C</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-400">지급 총 코인</span>
+                <CoinBadge value={selectedPkg.coins + selectedPkg.bonus} size="sm" />
+              </div>
+              <div className="border-t border-white/10 pt-2 flex justify-between">
+                <span className="text-gray-300 font-semibold">결제 금액</span>
+                <span className="text-white font-black text-base">{selectedPkg.price.toLocaleString()}원</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handlePurchase}
+              disabled={purchasing}
+              className={`w-full py-3.5 rounded-xl font-bold text-base transition-all mt-1
+                ${purchasing
+                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-accent-pink text-white hover:opacity-90 shadow-[0_0_20px_rgba(255,77,109,0.3)] hover:shadow-[0_0_30px_rgba(255,77,109,0.45)]'
+                }`}
+            >
+              {purchasing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-gray-400/40 border-t-gray-300 rounded-full animate-spin" />
+                  결제 처리 중...
+                </span>
+              ) : (
+                `${selectedPkg.price.toLocaleString()}원 결제하기`
+              )}
+            </button>
+
+            <p className="text-center text-[11px] text-gray-600">
+              결제 시 이용약관 및 환불 정책에 동의합니다.
+            </p>
+          </div>
+        </>
+      ) : (
+        /* ── 사용 내역 탭 ── */
+        <div className="space-y-2">
+          {DUMMY_TX.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 text-sm">거래 내역이 없습니다.</div>
+          ) : (
+            DUMMY_TX.map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/8 px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
+                    ${tx.type === 'charge' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}
+                  >
+                    {tx.type === 'charge' ? '↑' : '↓'}
+                  </div>
+                  <div>
+                    <p className="text-sm text-white font-medium">{tx.desc}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">{tx.date}</p>
+                  </div>
+                </div>
+                <span className={`font-bold text-sm ${tx.amount > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}C
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
