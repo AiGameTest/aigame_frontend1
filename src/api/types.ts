@@ -29,8 +29,8 @@ export interface AdminAddCoinsRequest { amount: number; reason: string; }
 export interface CaseTemplateSummary { id: number; title: string; description: string; difficulty: string; }
 export interface CaseTemplateDetail extends CaseTemplateSummary { previewNarrative: string; suspectNames: string[]; }
 
-export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; }
-export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; }
+export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; }
+export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; }
 
 export interface UserCaseDraftResponse {
   id: number;
@@ -41,6 +41,8 @@ export interface UserCaseDraftResponse {
   published: boolean;
   createdAt: string;
   updatedAt: string;
+  gameStartHour: number;
+  gameEndHour: number;
 }
 
 export interface StartSessionRequest {
@@ -52,6 +54,8 @@ export interface StartSessionRequest {
     victimProfile?: string;
     suspectCount?: number;
   };
+  gameStartHour?: number;
+  gameEndHour?: number;
 }
 
 export interface MessageLogItem {
@@ -84,6 +88,10 @@ export interface GameSessionResponse {
   actionsUsed: number;
   remainingActions: number;
   currentLocation: string | null;
+  gameStartHour: number;
+  gameEndHour: number;
+  gameMinutesUsed: number;
+  currentGameTime: string;
 }
 
 export interface SessionSummaryResponse {

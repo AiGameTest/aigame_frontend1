@@ -15,6 +15,7 @@ export function ResultPage() {
 
   const status = result?.status ?? current?.status ?? 'CLOSED';
   const isWon = status === 'WON';
+  const isTimeout = status === 'LOST' && !result;
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
@@ -22,11 +23,13 @@ export function ResultPage() {
         <h1 className="text-2xl font-black text-white">🔎 수사 결과</h1>
 
         <div className={`text-center py-4 rounded-xl ${isWon ? 'bg-green-900/30 border border-green-800' : 'bg-red-900/30 border border-red-800'}`}>
-          <p className="text-3xl mb-1">{isWon ? '🎉' : '😔'}</p>
+          <p className="text-3xl mb-1">{isWon ? '🎉' : isTimeout ? '⏰' : '😔'}</p>
           <p className={`text-lg font-bold ${isWon ? 'text-green-400' : 'text-red-400'}`}>
-            {isWon ? '정답입니다!' : '오답입니다...'}
+            {isWon ? '정답입니다!' : isTimeout ? '시간 초과!' : '오답입니다...'}
           </p>
-          <p className="text-sm text-gray-400 mt-1">상태: {status}</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {isTimeout ? '제한 시간 내에 범인을 찾지 못했습니다.' : `상태: ${status}`}
+          </p>
         </div>
 
         {result ? (
