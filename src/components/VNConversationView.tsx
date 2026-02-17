@@ -7,6 +7,7 @@ interface SuspectProfile {
   age?: number;
   personality?: string;
   background?: string;
+  imageUrl?: string;
 }
 
 interface VNConversationViewProps {
@@ -87,11 +88,15 @@ export function VNConversationView({
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[320px_1fr]">
         <aside className="border-b lg:border-b-0 lg:border-r border-white/10 bg-[#12161f] p-4 lg:p-5">
           <div className="h-full rounded-xl border border-white/10 bg-black/25 p-4 flex flex-col">
-            <div className="mx-auto w-40 h-52 rounded-xl border border-white/10 bg-zinc-900 flex items-center justify-center">
-              <svg viewBox="0 0 160 220" className="w-[85%] h-[85%]" fill="none">
-                <circle cx="80" cy="62" r="30" fill="#737373" />
-                <path d="M28 190 C28 142 52 122 80 122 C108 122 132 142 132 190" fill="#737373" />
-              </svg>
+            <div className="mx-auto w-72 h-96 rounded-xl border border-white/10 bg-zinc-900 flex items-center justify-center overflow-hidden">
+              {suspect.imageUrl ? (
+                <img src={suspect.imageUrl} alt={suspect.name} className="w-full h-full object-cover" />
+              ) : (
+                <svg viewBox="0 0 288 384" className="w-[85%] h-[85%]" fill="none">
+                  <circle cx="144" cy="112" r="54" fill="#737373" />
+                  <path d="M50 342 C50 256 94 220 144 220 C194 220 238 256 238 342" fill="#737373" />
+                </svg>
+              )}
             </div>
 
             <div className="mt-4">

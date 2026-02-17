@@ -78,8 +78,10 @@ export async function adminAddCoins(userId: number, payload: AdminAddCoinsReques
   return data;
 }
 
-export async function listCases(): Promise<CaseTemplateSummary[]> {
-  const { data } = await api.get<CaseTemplateSummary[]>('/cases');
+export async function listCases(sort?: 'recommended'): Promise<CaseTemplateSummary[]> {
+  const { data } = await api.get<CaseTemplateSummary[]>('/cases', {
+    params: sort ? { sort } : undefined,
+  });
   return data;
 }
 
@@ -103,14 +105,29 @@ export async function publishUserCase(draftId: number): Promise<UserCaseDraftRes
   return data;
 }
 
+export async function getUserCase(draftId: number): Promise<UserCaseDraftResponse> {
+  const { data } = await api.get<UserCaseDraftResponse>(`/user-cases/${draftId}`);
+  return data;
+}
+
 export async function listMyCases(): Promise<UserCaseDraftResponse[]> {
   const { data } = await api.get<UserCaseDraftResponse[]>('/user-cases/mine');
   return data;
 }
 
-export async function listPublishedUserCases(): Promise<UserCaseDraftResponse[]> {
-  const { data } = await api.get<UserCaseDraftResponse[]>('/user-cases/published');
+export async function listPublishedUserCases(sort?: 'recommended'): Promise<UserCaseDraftResponse[]> {
+  const { data } = await api.get<UserCaseDraftResponse[]>('/user-cases/published', {
+    params: sort ? { sort } : undefined,
+  });
   return data;
+}
+
+export async function recommendCase(caseId: number): Promise<void> {
+  await api.post(`/cases/${caseId}/recommend`);
+}
+
+export async function recommendUserCase(draftId: number): Promise<void> {
+  await api.post(`/user-cases/${draftId}/recommend`);
 }
 
 export async function listMySessions(): Promise<SessionSummaryResponse[]> {
@@ -145,5 +162,15 @@ export async function moveToLocation(sessionId: number, payload: MoveRequest): P
 
 export async function investigate(sessionId: number): Promise<InvestigateResponse> {
   const { data } = await api.post<InvestigateResponse>(`/sessions/${sessionId}/investigate`);
+  return data;
+}
+
+export async function uploadFile(file: File, folder = 'suspects'): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('folder', folder);
+  const { data } = await api.post<{ url: string }>('/files/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data;
 }
