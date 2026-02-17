@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCase, listMySessions, listPublishedUserCases } from '../api/client';
-import type { CaseTemplateSummary, SessionSummaryResponse, UserCaseDraftResponse } from '../api/types';
+import type { SessionSummaryResponse } from '../api/types';
 import { useSessionStore } from '../store/sessionStore';
 
 type CaseSource = 'basic' | 'user';
@@ -17,7 +17,7 @@ interface PanelCase {
 }
 
 const DIFFICULTY_LABEL: Record<string, string> = {
-  EASY: '쉬움', MEDIUM: '보통', HARD: '어려움', USER: '커뮤니티',
+  EASY: '쉬움', MEDIUM: '보통', HARD: '어려움', USER: '커스텀',
 };
 const DIFFICULTY_STYLE: Record<string, string> = {
   EASY: 'badge-easy', MEDIUM: 'badge-medium', HARD: 'badge-hard', USER: 'badge-medium',
@@ -129,49 +129,48 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     }
   }
 
+  function handleContinue() {
+    if (activeSession) navigate(`/play/${activeSession.id}`);
+  }
+
   const colorIdx = detail ? detail.id % THUMBNAIL_COLORS.length : 0;
   const diffKey = detail?.difficulty?.toUpperCase() ?? 'MEDIUM';
+
+  if (!isOpen) return null;
 
   return (
     <>
       {/* 백드롭 */}
       <div
-        className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* 패널 — 오른쪽에서 슬라이드 */}
-      <div
-        className={`fixed right-0 top-0 h-full z-50 w-full max-w-2xl bg-[#0f1117] border-l border-white/10 shadow-2xl flex flex-col
-          transition-transform duration-300 ease-out
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
-      >
-        {/* 닫기 버튼 */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-colors z-10"
-        >
-          ✕
-        </button>
+      {/* 가운데 모달 */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-lg bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
-        {loading || !detail ? (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            {loading ? '불러오는 중...' : ''}
-          </div>
-        ) : (
-          <>
-            {/* 상단: 이미지 + 정보 영역 */}
-            <div className="flex flex-col sm:flex-row gap-0 flex-1 min-h-0 overflow-y-auto">
+          {/* 닫기 버튼 */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white transition-colors z-10"
+          >
+            ✕
+          </button>
 
-              {/* 왼쪽: 썸네일 이미지 */}
-              <div className="sm:w-64 sm:min-w-[256px] sm:h-full">
-                <div className={`w-full h-56 sm:h-full bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} flex items-center justify-center`}>
-                  <span className="text-7xl opacity-40">🔎</span>
-                </div>
+          {loading || !detail ? (
+            <div className="flex-1 flex items-center justify-center text-gray-500 py-20">
+              {loading ? '불러오는 중...' : ''}
+            </div>
+          ) : (
+            <div className="overflow-y-auto">
+              {/* 썸네일 */}
+              <div className={`w-full h-48 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} flex items-center justify-center flex-shrink-0`}>
+                <span className="text-7xl opacity-30">🔎</span>
               </div>
 
-              {/* 오른쪽: 텍스트 정보 */}
-              <div className="flex-1 flex flex-col p-6 gap-4">
+              {/* 콘텐츠 */}
+              <div className="p-6 space-y-4">
                 {/* 난이도 + 제목 */}
                 <div>
                   <span className={`badge ${DIFFICULTY_STYLE[diffKey] ?? 'badge-medium'}`}>
@@ -180,21 +179,8 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   <h2 className="mt-2 text-2xl font-black text-white leading-tight">{detail.title}</h2>
                 </div>
 
-                {/* 진행 중 세션 알림 */}
-                {activeSession && (
-                  <div className="bg-accent-pink/10 border border-accent-pink/30 rounded-xl p-3 flex items-center justify-between">
-                    <p className="text-sm text-accent-pink font-semibold">진행 중인 수사가 있습니다</p>
-                    <button
-                      className="px-3 py-1.5 rounded-lg bg-accent-pink text-white text-sm font-bold hover:opacity-90"
-                      onClick={() => navigate(`/play/${activeSession.id}`)}
-                    >
-                      이어하기
-                    </button>
-                  </div>
-                )}
-
                 {/* 게임 설명 */}
-                <div className="flex-1 rounded-xl border border-white/10 bg-black/30 p-4">
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4">
                   <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">게임 설명</p>
                   <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
                     {detail.previewNarrative}
@@ -218,18 +204,28 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   </div>
                 )}
 
-                {/* 시작 버튼 */}
-                <button
-                  className="w-full py-3.5 rounded-xl bg-accent-pink text-white font-bold text-base hover:opacity-90 transition-opacity disabled:opacity-50 mt-auto"
-                  onClick={handleStart}
-                  disabled={starting}
-                >
-                  {starting ? '세션 생성 중...' : activeSession ? '새로 시작하기' : '▶ 시작하기'}
-                </button>
+                {/* 버튼 영역 */}
+                <div className="flex gap-2 pt-1">
+                  {activeSession && (
+                    <button
+                      className="flex-1 py-3 rounded-xl border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors"
+                      onClick={handleContinue}
+                    >
+                      ▶ 이어하기
+                    </button>
+                  )}
+                  <button
+                    className="flex-1 py-3 rounded-xl bg-accent-pink text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                    onClick={handleStart}
+                    disabled={starting}
+                  >
+                    {starting ? '세션 생성 중...' : activeSession ? '새로 시작하기' : '▶ 시작하기'}
+                  </button>
+                </div>
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </>
   );

@@ -1,9 +1,10 @@
-﻿import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+﻿import { FormEvent, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { listCases, listPublishedUserCases } from '../api/client';
 import type { CaseTemplateSummary, UserCaseDraftResponse } from '../api/types';
 import { CaseCard } from '../components/CaseCard';
 import { CaseDetailPanel } from '../components/CaseDetailPanel';
+import { useSessionStore } from '../store/sessionStore';
 
 const BANNERS = [
   {
@@ -23,20 +24,217 @@ const BANNERS = [
   },
 ];
 
-function ScrollArrow({ direction, onClick }: { direction: 'left' | 'right'; onClick: () => void }) {
+function formatHour(h: number): string {
+  const period = h < 12 ? '오전' : '오후';
+  const display = h <= 12 ? h : h - 12;
+  return `${period} ${display === 0 ? 12 : display}시`;
+}
+
+// ── AI 모드 모달 ──────────────────────────────────────────
+function AiModeModal({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const start = useSessionStore((s) => s.start);
+
+  const [setting, setSetting] = useState('');
+  const [victimProfile, setVictimProfile] = useState('');
+  const [suspectCount, setSuspectCount] = useState(4);
+  const [gameStartHour, setGameStartHour] = useState(12);
+  const [gameEndHour, setGameEndHour] = useState(18);
+  const [loading, setLoading] = useState(false);
+
+  const totalHours = gameEndHour - gameStartHour;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    try {
+      const session = await start({
+        mode: 'AI',
+        aiPrompt: {
+          setting: setting || undefined,
+          victimProfile: victimProfile || undefined,
+          suspectCount,
+        },
+        gameStartHour,
+        gameEndHour,
+      });
+      navigate(`/play/${session.id}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className="absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full text-white text-sm transition-colors"
-      style={{ [direction]: -4 }}
-      aria-label={direction === 'left' ? '왼쪽으로 스크롤' : '오른쪽으로 스크롤'}
-    >
-      {direction === 'left' ? '<' : '>'}
-    </button>
+    <>
+      {/* 백드롭 */}
+      <div
+        className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      {/* 모달 */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-lg rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/10">
+
+          {/* 헤더 — 그라디언트 배경 */}
+          <div className="relative bg-gradient-to-br from-[#0d1f2d] via-[#0a1628] to-[#110d1f] px-6 pt-8 pb-6 overflow-hidden">
+            {/* 배경 장식 원 */}
+            <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
+
+            {/* 닫기 */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">🤖</span>
+                <span className="text-[11px] uppercase tracking-[0.2em] text-teal-400 font-semibold">AI Murder Mystery</span>
+              </div>
+              <h2 className="text-3xl font-black text-white leading-tight">
+                AI 사건 생성
+              </h2>
+              <p className="text-sm text-gray-400 mt-1.5">
+                원하는 설정을 입력하면 AI가 독창적인 사건을 만들어줍니다.
+              </p>
+            </div>
+          </div>
+
+          {/* 폼 영역 */}
+          <div className="bg-[#0c0e14] px-6 py-5 max-h-[60vh] overflow-y-auto">
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* 장소 / 배경 */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <span className="text-teal-400">01</span> 장소 / 배경
+                </label>
+                <input
+                  className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/70 focus:ring-2 focus:ring-teal-500/20 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-gray-600"
+                  value={setting}
+                  onChange={(e) => setSetting(e.target.value)}
+                  placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
+                />
+              </div>
+
+              {/* 피해자 설정 */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <span className="text-teal-400">02</span> 피해자 설정
+                </label>
+                <input
+                  className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/70 focus:ring-2 focus:ring-teal-500/20 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-gray-600"
+                  value={victimProfile}
+                  onChange={(e) => setVictimProfile(e.target.value)}
+                  placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
+                />
+              </div>
+
+              {/* 용의자 수 */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <span className="text-teal-400">03</span> 용의자 수
+                </label>
+                <div className="flex gap-2">
+                  {[3, 4, 5, 6].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setSuspectCount(n)}
+                      className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all ${
+                        suspectCount === n
+                          ? 'bg-teal-500/20 border-teal-500/60 text-teal-300 shadow-[0_0_12px_rgba(20,184,166,0.2)]'
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                      }`}
+                    >
+                      {n}명
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 수사 시간 설정 */}
+              <div className="space-y-2 rounded-xl bg-white/[0.03] border border-white/8 p-4">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <span className="text-teal-400">04</span> 수사 시간 설정
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[11px] text-gray-500 mb-1">시작 시각</p>
+                    <select
+                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/60 text-white rounded-xl px-3 py-2.5 text-sm outline-none transition-all"
+                      value={gameStartHour}
+                      onChange={(e) => setGameStartHour(Number(e.target.value))}
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i} className="bg-[#0c0e14]">{formatHour(i)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-500 mb-1">종료 시각</p>
+                    <select
+                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/60 text-white rounded-xl px-3 py-2.5 text-sm outline-none transition-all"
+                      value={gameEndHour}
+                      onChange={(e) => setGameEndHour(Number(e.target.value))}
+                    >
+                      {Array.from({ length: 24 }, (_, i) => i + 1).filter(h => h > gameStartHour).map(h => (
+                        <option key={h} value={h} className="bg-[#0c0e14]">{formatHour(h)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  총 {totalHours}시간 ({totalHours * 60}분) · 행동당 15분 소모 · 최대 {Math.floor(totalHours * 60 / 15)}회 행동 가능
+                </p>
+              </div>
+
+              {/* 생성 버튼 */}
+              <button
+                className={`w-full py-3.5 rounded-xl font-bold text-base transition-all
+                  ${loading
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-teal-500 to-violet-500 text-white hover:opacity-90 shadow-[0_0_24px_rgba(20,184,166,0.35)] hover:shadow-[0_0_32px_rgba(20,184,166,0.5)]'
+                  }`}
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-gray-400/40 border-t-gray-300 rounded-full animate-spin" />
+                    AI가 사건을 생성하는 중...
+                  </span>
+                ) : (
+                  '🔮 AI 사건 생성하기'
+                )}
+              </button>
+
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
-function ScrollSection({
+// ── 공통 컴포넌트 ─────────────────────────────────────────
+function ScrollSectionPlain({
   title,
   accent,
   linkText = '더보기',
@@ -47,14 +245,6 @@ function ScrollSection({
   linkText?: string;
   children: React.ReactNode;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (dir: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    const amount = dir === 'left' ? -300 : 300;
-    scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
-  };
-
   return (
     <section className="mb-10">
       <div className="section-header">
@@ -63,12 +253,8 @@ function ScrollSection({
         </h2>
         <span className="section-link">{linkText}</span>
       </div>
-      <div className="relative">
-        <ScrollArrow direction="left" onClick={() => scroll('left')} />
-        <div ref={scrollRef} className="scroll-row">
-          {children}
-        </div>
-        <ScrollArrow direction="right" onClick={() => scroll('right')} />
+      <div className="scroll-row">
+        {children}
       </div>
     </section>
   );
@@ -78,49 +264,45 @@ function CreateCaseCard() {
   return (
     <Link to="/create" className="block group flex-shrink-0">
       <div className="w-[220px] md:w-[260px]">
-        {/* 썸네일 — CaseCard와 동일 비율 */}
         <div className="relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-dashed border-zinc-600 group-hover:border-accent-pink bg-zinc-900 mb-2 transition-colors">
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
-            <span className="text-3xl text-zinc-500 group-hover:text-accent-pink transition-colors leading-none">
-              ＋
-            </span>
-            <span className="text-xs text-zinc-500 group-hover:text-accent-pink transition-colors font-medium">
-              새 사건 만들기
-            </span>
+            <span className="text-3xl text-zinc-500 group-hover:text-accent-pink transition-colors leading-none">＋</span>
+            <span className="text-xs text-zinc-500 group-hover:text-accent-pink transition-colors font-medium">새 사건 만들기</span>
           </div>
         </div>
-        <h3 className="text-sm font-semibold text-zinc-400 group-hover:text-accent-pink transition-colors">
-          직접 만들기
-        </h3>
+        <h3 className="text-sm font-semibold text-zinc-400 group-hover:text-accent-pink transition-colors">직접 만들기</h3>
         <p className="text-xs text-gray-600 mt-0.5">나만의 사건을 설계하고 게시하세요</p>
       </div>
     </Link>
   );
 }
 
-function ModeCard({ icon, name, to }: { icon: string; name: string; to?: string }) {
+function ModeCard({
+  icon,
+  name,
+  to,
+  onClick,
+}: {
+  icon: string;
+  name: string;
+  to?: string;
+  onClick?: () => void;
+}) {
   const inner = (
     <div className="flex flex-col items-center gap-2 w-[100px] group cursor-pointer">
       <div className="w-16 h-16 rounded-full bg-dark-surface border border-dark-border flex items-center justify-center text-2xl group-hover:border-accent-pink transition-colors">
         {icon}
       </div>
-      <span className="text-xs text-gray-300 group-hover:text-accent-pink transition-colors text-center">
-        {name}
-      </span>
+      <span className="text-xs text-gray-300 group-hover:text-accent-pink transition-colors text-center">{name}</span>
     </div>
   );
 
+  if (onClick) return <button onClick={onClick}>{inner}</button>;
   if (to) return <Link to={to}>{inner}</Link>;
   return inner;
 }
 
-function CommunityCaseCard({
-  c,
-  onClick,
-}: {
-  c: UserCaseDraftResponse;
-  onClick: (id: number) => void;
-}) {
+function CommunityCaseCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: (id: number) => void }) {
   const colors = [
     'from-violet-900 to-fuchsia-800',
     'from-sky-900 to-blue-800',
@@ -132,9 +314,7 @@ function CommunityCaseCard({
   return (
     <div className="block group cursor-pointer" onClick={() => onClick(c.id)}>
       <div className="w-[220px] md:w-[260px]">
-        <div
-          className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${colors[colorIdx]} mb-2`}
-        >
+        <div className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${colors[colorIdx]} mb-2`}>
           {c.thumbnailUrl ? (
             <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
@@ -144,9 +324,7 @@ function CommunityCaseCard({
           )}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
         </div>
-        <h3 className="text-sm font-semibold text-white truncate group-hover:text-accent-pink transition-colors">
-          {c.title}
-        </h3>
+        <h3 className="text-sm font-semibold text-white truncate group-hover:text-accent-pink transition-colors">{c.title}</h3>
         <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.summary}</p>
         <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-400">
           <span>▶ {c.playCount ?? 0}</span>
@@ -157,12 +335,13 @@ function CommunityCaseCard({
   );
 }
 
+// ── 메인 페이지 ───────────────────────────────────────────
 export function HomePage() {
   const [cases, setCases] = useState<CaseTemplateSummary[]>([]);
   const [communityCases, setCommunityCases] = useState<UserCaseDraftResponse[]>([]);
   const [bannerIdx, setBannerIdx] = useState(0);
+  const [showAiModal, setShowAiModal] = useState(false);
 
-  // 패널 상태
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
   const [selectedSource, setSelectedSource] = useState<'basic' | 'user'>('basic');
 
@@ -192,9 +371,7 @@ export function HomePage() {
     <div className="space-y-8">
       {/* 배너 */}
       <section className="relative rounded-2xl overflow-hidden">
-        <div
-          className={`bg-gradient-to-r ${banner.gradient} px-8 md:px-16 py-16 md:py-24 transition-all duration-700`}
-        >
+        <div className={`bg-gradient-to-r ${banner.gradient} px-8 md:px-16 py-16 md:py-24 transition-all duration-700`}>
           <p className="text-gray-300 text-sm mb-2">AI Murder Mystery</p>
           <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">{banner.title}</h1>
           <p className="mt-3 text-lg text-gray-200">{banner.subtitle}</p>
@@ -204,48 +381,42 @@ export function HomePage() {
             <button
               key={i}
               onClick={() => setBannerIdx(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                i === bannerIdx ? 'bg-white' : 'bg-white/40'
-              }`}
+              className={`w-2 h-2 rounded-full transition-colors ${i === bannerIdx ? 'bg-white' : 'bg-white/40'}`}
               aria-label={`배너 ${i + 1}`}
             />
           ))}
         </div>
       </section>
 
-      {/* 기본 사건 — CreateCaseCard 맨 앞 */}
+      {/* 기본 사건 */}
       {cases.length > 0 && (
-        <ScrollSection title="기본 사건" accent="추천">
-          <CreateCaseCard />
+        <ScrollSectionPlain title="기본 사건" accent="추천">
           {cases.map((c) => (
             <CaseCard key={c.id} c={c} onClick={openBasicCase} />
           ))}
-        </ScrollSection>
+        </ScrollSectionPlain>
       )}
 
       {/* 게임 모드 */}
       <section className="mb-10">
         <div className="section-header">
-          <h2 className="section-title">
-            추천 <span className="text-accent-pink">게임 모드</span>
-          </h2>
+          <h2 className="section-title">추천 <span className="text-accent-pink">게임 모드</span></h2>
           <span className="section-link">더보기</span>
         </div>
         <div className="flex gap-6 overflow-x-auto pb-2">
           <ModeCard icon="B" name="BASIC" />
-          <ModeCard icon="A" name="AI" to="/ai" />
+          <ModeCard icon="A" name="AI" onClick={() => setShowAiModal(true)} />
           <ModeCard icon="U" name="USER" />
         </div>
       </section>
 
-      {/* 커뮤니티 사건 */}
-      {communityCases.length > 0 && (
-        <ScrollSection title="커뮤니티" accent="사건">
-          {communityCases.map((c) => (
-            <CommunityCaseCard key={c.id} c={c} onClick={openUserCase} />
-          ))}
-        </ScrollSection>
-      )}
+      {/* 커스텀 사건 */}
+      <ScrollSectionPlain title="커스텀" accent="사건">
+        <CreateCaseCard />
+        {communityCases.map((c) => (
+          <CommunityCaseCard key={c.id} c={c} onClick={openUserCase} />
+        ))}
+      </ScrollSectionPlain>
 
       {/* 사건 상세 패널 */}
       <CaseDetailPanel
@@ -253,6 +424,9 @@ export function HomePage() {
         source={selectedSource}
         onClose={() => setSelectedCaseId(null)}
       />
+
+      {/* AI 모드 모달 */}
+      {showAiModal && <AiModeModal onClose={() => setShowAiModal(false)} />}
     </div>
   );
 }
