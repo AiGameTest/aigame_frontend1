@@ -12,7 +12,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen bg-white">
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-dark-bg/95 backdrop-blur border-b border-dark-border">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
