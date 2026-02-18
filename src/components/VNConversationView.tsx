@@ -19,6 +19,7 @@ interface VNConversationViewProps {
   currentGameTime: string;
   loading: boolean;
   isTimeUp: boolean;
+  suspectLeft?: boolean;
   onSend: (question: string) => void;
   onBack: () => void;
 }
@@ -41,6 +42,7 @@ export function VNConversationView({
   currentGameTime,
   loading,
   isTimeUp,
+  suspectLeft = false,
   onSend,
   onBack,
 }: VNConversationViewProps) {
@@ -53,7 +55,7 @@ export function VNConversationView({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!input.trim() || loading || isTimeUp) return;
+    if (!input.trim() || loading || isTimeUp || suspectLeft) return;
     onSend(input.trim());
     setInput('');
   }
@@ -68,7 +70,7 @@ export function VNConversationView({
             onClick={onBack}
             className="px-3 py-1.5 rounded-md border border-white/15 text-sm text-gray-300 hover:text-white hover:border-white/30 transition-colors"
           >
-            메인 화면
+            뒤로가기
           </button>
 
           <div className="text-center min-w-0">
@@ -88,7 +90,7 @@ export function VNConversationView({
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[320px_1fr]">
         <aside className="border-b lg:border-b-0 lg:border-r border-white/10 bg-[#12161f] p-4 lg:p-5">
           <div className="h-full rounded-xl border border-white/10 bg-black/25 p-4 flex flex-col">
-            <div className="mx-auto w-72 h-96 rounded-xl border border-white/10 bg-zinc-900 flex items-center justify-center overflow-hidden">
+            <div className="mx-auto w-60 h-80 rounded-xl border border-white/10 bg-zinc-900 flex items-center justify-center overflow-hidden">
               {suspect.imageUrl ? (
                 <img src={suspect.imageUrl} alt={suspect.name} className="w-full h-full object-cover" />
               ) : (
@@ -136,6 +138,12 @@ export function VNConversationView({
             </div>
           )}
 
+          {suspectLeft && !isTimeUp && (
+            <div className="border-b border-amber-700/40 bg-amber-900/20 px-4 py-2 text-sm text-amber-200 text-center">
+              {suspect.name}이(가) 자리를 떠났습니다. 다른 장소에서 만날 수 있습니다.
+            </div>
+          )}
+
           <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
             {messages.length === 0 && !loading && (
               <div className="text-center text-xs text-gray-500 py-8">
@@ -179,6 +187,14 @@ export function VNConversationView({
                 </div>
               </div>
             )}
+
+            {suspectLeft && !isTimeUp && (
+              <div className="flex justify-center">
+                <div className="px-4 py-2 rounded-full text-xs text-amber-300 bg-amber-900/30 border border-amber-700/40">
+                  {suspect.name}이(가) 자리를 떠났습니다.
+                </div>
+              </div>
+            )}
           </div>
 
           <footer className="border-t border-white/10 bg-black/45 px-4 py-3">
@@ -187,13 +203,19 @@ export function VNConversationView({
                 className="input flex-1"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={isTimeUp ? '시간이 종료되어 질문할 수 없습니다.' : `${suspect.name}에게 질문하기... (행동 시 15분 경과)`}
-                disabled={loading || isTimeUp}
+                placeholder={
+                  isTimeUp
+                    ? '시간이 종료되어 질문할 수 없습니다.'
+                    : suspectLeft
+                    ? `${suspect.name}이(가) 자리를 떠났습니다.`
+                    : `${suspect.name}에게 질문하기... (행동 시 15분 경과)`
+                }
+                disabled={loading || isTimeUp || suspectLeft}
               />
               <button
                 className="px-4 py-2 rounded-md bg-accent-pink text-white font-semibold hover:opacity-90 disabled:opacity-50"
                 type="submit"
-                disabled={!input.trim() || loading || isTimeUp}
+                disabled={!input.trim() || loading || isTimeUp || suspectLeft}
               >
                 전송
               </button>

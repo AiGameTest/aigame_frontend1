@@ -210,7 +210,7 @@ export function ProfilePage() {
               <div
                 key={s.id}
                 className="bg-dark-surface border border-dark-border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-accent-pink/50"
-                onClick={() => navigate(`/play/${s.id}`)}
+                onClick={() => navigate(`/play/${s.publicId}`)}
               >
                 <div>
                   {s.title && (
@@ -246,7 +246,7 @@ export function ProfilePage() {
               <div
                 key={s.id}
                 className="bg-dark-surface border border-dark-border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-gray-500"
-                onClick={() => navigate(`/result/${s.id}`)}
+                onClick={() => navigate(`/result/${s.publicId}`)}
               >
                 <div>
                   {s.title && (

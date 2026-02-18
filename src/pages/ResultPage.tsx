@@ -4,14 +4,15 @@ import { useSessionStore } from '../store/sessionStore';
 
 export function ResultPage() {
   const { sessionId } = useParams();
-  const id = Number(sessionId);
+  const sessionPublicId = sessionId ?? '';
   const result = useSessionStore((s) => s.result);
   const current = useSessionStore((s) => s.current);
   const load = useSessionStore((s) => s.load);
 
   useEffect(() => {
-    if (!current || current.id !== id) void load(id);
-  }, [current, id, load]);
+    if (!sessionPublicId) return;
+    if (!current || current.publicId !== sessionPublicId) void load(sessionPublicId);
+  }, [current, sessionPublicId, load]);
 
   const status = result?.status ?? current?.status ?? 'CLOSED';
   const isWon = status === 'WON';

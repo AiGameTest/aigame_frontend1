@@ -70,7 +70,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
         gameStartHour,
         gameEndHour,
       });
-      navigate(`/play/${session.id}`);
+      navigate(`/play/${session.publicId}`);
     } finally {
       setLoading(false);
     }
@@ -238,11 +238,13 @@ function ScrollSectionPlain({
   title,
   accent,
   linkText = '더보기',
+  to,
   children,
 }: {
   title: string;
   accent?: string;
   linkText?: string;
+  to?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -251,7 +253,11 @@ function ScrollSectionPlain({
         <h2 className="section-title">
           {title} {accent && <span className="text-accent-pink">{accent}</span>}
         </h2>
-        <span className="section-link">{linkText}</span>
+        {to ? (
+          <Link to={to} className="section-link">{linkText}</Link>
+        ) : (
+          <span className="section-link text-gray-600 cursor-default">{linkText}</span>
+        )}
       </div>
       <div className="scroll-row">
         {children}
@@ -260,7 +266,7 @@ function ScrollSectionPlain({
   );
 }
 
-function CreateCaseCard() {
+function DirectMakeCard() {
   return (
     <Link to="/create" className="block group flex-shrink-0">
       <div className="w-[220px] md:w-[260px]">
@@ -277,29 +283,21 @@ function CreateCaseCard() {
   );
 }
 
-function ModeCard({
-  icon,
-  name,
-  to,
-  onClick,
-}: {
-  icon: string;
-  name: string;
-  to?: string;
-  onClick?: () => void;
-}) {
-  const inner = (
-    <div className="flex flex-col items-center gap-2 w-[100px] group cursor-pointer">
-      <div className="w-16 h-16 rounded-full bg-dark-surface border border-dark-border flex items-center justify-center text-2xl group-hover:border-accent-pink transition-colors">
-        {icon}
+function AiMakeCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="block group flex-shrink-0 text-left">
+      <div className="w-[220px] md:w-[260px]">
+        <div className="relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-dashed border-zinc-600 group-hover:border-teal-500 bg-zinc-900 mb-2 transition-colors">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+            <span className="text-3xl text-zinc-500 group-hover:text-accent-pink transition-colors leading-none">＋</span>
+            <span className="text-xs text-zinc-500 group-hover:text-teal-400 transition-colors font-medium">AI 사건 만들기</span>
+          </div>
+        </div>
+        <h3 className="text-sm font-semibold text-zinc-400 group-hover:text-accent-pink transition-colors">AI 직접 만들기</h3>
+        <p className="text-xs text-gray-600 mt-0.5">AI가 설정을 바탕으로 새로운 사건을 생성합니다</p>
       </div>
-      <span className="text-xs text-gray-300 group-hover:text-accent-pink transition-colors text-center">{name}</span>
-    </div>
+    </button>
   );
-
-  if (onClick) return <button onClick={onClick}>{inner}</button>;
-  if (to) return <Link to={to}>{inner}</Link>;
-  return inner;
 }
 
 function CommunityCaseCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: (id: number) => void }) {
@@ -319,7 +317,7 @@ function CommunityCaseCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: 
             <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-4xl opacity-50">사건</span>
+              <span className="text-5xl opacity-60">🔎</span>
             </div>
           )}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
@@ -346,8 +344,8 @@ export function HomePage() {
   const [selectedSource, setSelectedSource] = useState<'basic' | 'user'>('basic');
 
   useEffect(() => {
-    void listCases('recommended').then(setCases).catch(() => setCases([]));
-    void listPublishedUserCases('recommended').then(setCommunityCases).catch(() => setCommunityCases([]));
+    void listCases().then(setCases).catch(() => setCases([]));
+    void listPublishedUserCases().then(setCommunityCases).catch(() => setCommunityCases([]));
   }, []);
 
   useEffect(() => {
@@ -388,31 +386,23 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* 직접 만들기 */}
+      <ScrollSectionPlain title="직접" accent="만들기">
+        <DirectMakeCard />
+        <AiMakeCard onClick={() => setShowAiModal(true)} />
+      </ScrollSectionPlain>
+
       {/* 기본 사건 */}
       {cases.length > 0 && (
-        <ScrollSectionPlain title="기본 사건" accent="추천">
+        <ScrollSectionPlain title="기본 사건" accent="추천" to="/cases?tab=basic">
           {cases.map((c) => (
             <CaseCard key={c.id} c={c} onClick={openBasicCase} />
           ))}
         </ScrollSectionPlain>
       )}
 
-      {/* 게임 모드 */}
-      <section className="mb-10">
-        <div className="section-header">
-          <h2 className="section-title">추천 <span className="text-accent-pink">게임 모드</span></h2>
-          <span className="section-link">더보기</span>
-        </div>
-        <div className="flex gap-6 overflow-x-auto pb-2">
-          <ModeCard icon="B" name="BASIC" />
-          <ModeCard icon="A" name="AI" onClick={() => setShowAiModal(true)} />
-          <ModeCard icon="U" name="USER" />
-        </div>
-      </section>
-
       {/* 커스텀 사건 */}
-      <ScrollSectionPlain title="커스텀" accent="사건">
-        <CreateCaseCard />
+      <ScrollSectionPlain title="커스텀" accent="사건" to="/cases?tab=custom">
         {communityCases.map((c) => (
           <CommunityCaseCard key={c.id} c={c} onClick={openUserCase} />
         ))}

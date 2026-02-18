@@ -30,9 +30,13 @@ export function CaseCard({ c, onClick }: CaseCardProps) {
         <div
           className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} mb-2`}
         >
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-5xl opacity-60">🔎</span>
-          </div>
+          {c.thumbnailUrl ? (
+            <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-5xl opacity-60">🔎</span>
+            </div>
+          )}
           <div className="absolute top-2 left-2">
             <span className={`badge ${DIFFICULTY_BADGE[c.difficulty?.toUpperCase()] ?? 'badge-medium'}`}>
               {c.difficulty}

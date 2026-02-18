@@ -73,7 +73,26 @@ export interface CaseTemplateSummary {
   playCount: number;
   recommendCount: number;
 }
-export interface CaseTemplateDetail extends CaseTemplateSummary { previewNarrative: string; suspectNames: string[]; recommended?: boolean; }
+
+export interface CaseSuspectInfo {
+  name: string;
+  personality?: string;
+  background?: string;
+  imageUrl?: string;
+}
+
+export interface CaseVictimInfo {
+  name: string;
+  description?: string;
+}
+
+export interface CaseTemplateDetail extends CaseTemplateSummary {
+  previewNarrative: string;
+  setting?: string;
+  victim?: CaseVictimInfo;
+  suspects: CaseSuspectInfo[];
+  recommended?: boolean;
+}
 
 export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
 export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
@@ -81,6 +100,8 @@ export interface UpdateUserCaseDraftRequest { title: string; summary: string; sc
 export interface UserCaseDraftResponse {
   id: number;
   authorUserId: number;
+  authorNickname?: string;
+  authorProfileImageUrl?: string;
   title: string;
   summary: string;
   scenarioPrompt: string;
@@ -124,6 +145,7 @@ export interface EvidenceItem {
 
 export interface GameSessionResponse {
   id: number;
+  publicId: string;
   mode: GameMode;
   caseSourceType: CaseSourceType;
   sourceRefId: number | null;
@@ -140,6 +162,7 @@ export interface GameSessionResponse {
 
 export interface SessionSummaryResponse {
   id: number;
+  publicId: string;
   mode: GameMode;
   caseSourceType: CaseSourceType;
   sourceRefId: number | null;

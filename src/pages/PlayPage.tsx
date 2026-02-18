@@ -42,13 +42,38 @@ function extractLocations(story: StoryData): string[] {
   return Array.from(locationSet);
 }
 
-function buildSuspectLocationMap(story: StoryData): Map<string, SuspectProfile[]> {
+/** 백엔드 suspectLocationIndex 와 동일한 결정론적 해시 */
+function suspectLocationIndex(sessionId: number, suspectName: string, timeSlot: number, locationCount: number): number {
+  let h = sessionId % 101;
+  for (let i = 0; i < suspectName.length; i++) {
+    h = (h * 31 + (suspectName.charCodeAt(i) % 97)) % 10007;
+  }
+  h = (h + timeSlot * 37) % 10007;
+  return ((h % locationCount) + locationCount) % locationCount;
+}
+
+/** 타임라인 고유 장소 목록 + 해시로 현재 수사 위치 결정 (1시간마다 이동) */
+function resolveSuspectLocation(
+  sessionId: number,
+  suspectName: string,
+  timeline: { time: string; location: string }[],
+  currentTotalMinutes: number
+): string | null {
+  const locations = [...new Set(timeline.map((t) => t.location).filter(Boolean))];
+  if (!locations.length) return null;
+  if (locations.length === 1) return locations[0];
+  const timeSlot = Math.floor(currentTotalMinutes / 60);
+  return locations[suspectLocationIndex(sessionId, suspectName, timeSlot, locations.length)];
+}
+
+function buildSuspectLocationMap(story: StoryData, sessionId: number, gameStartHour: number, gameMinutesUsed: number): Map<string, SuspectProfile[]> {
   const map = new Map<string, SuspectProfile[]>();
+  const currentTotalMinutes = gameStartHour * 60 + gameMinutesUsed;
   for (const s of story.suspects ?? []) {
-    const firstLoc = (s.timeline ?? [])[0]?.location;
-    if (!firstLoc) continue;
-    if (!map.has(firstLoc)) map.set(firstLoc, []);
-    map.get(firstLoc)!.push(s);
+    const loc = resolveSuspectLocation(sessionId, s.name, s.timeline ?? [], currentTotalMinutes);
+    if (!loc) continue;
+    if (!map.has(loc)) map.set(loc, []);
+    map.get(loc)!.push(s);
   }
   return map;
 }
@@ -66,8 +91,7 @@ function statusLabel(status: string): string {
 }
 
 export function PlayPage() {
-  const { sessionId } = useParams();
-  const id = Number(sessionId);
+  const { sessionId: sessionPublicId } = useParams();
   const navigate = useNavigate();
 
   const current = useSessionStore((s) => s.current);
@@ -87,14 +111,18 @@ export function PlayPage() {
   const [investigating, setInvestigating] = useState(false);
 
   useEffect(() => {
-    void load(id);
-  }, [id, load]);
+    if (!sessionPublicId) return;
+    void load(sessionPublicId);
+  }, [sessionPublicId, load]);
 
   const story = useMemo(() => (current ? parseStory(current.generatedStoryJson) : {}), [current]);
   const locations = useMemo(() => extractLocations(story), [story]);
   const suspectNames = useMemo(() => (story.suspects ?? []).map((s) => s.name), [story]);
   const currentLocation = current?.currentLocation ?? null;
-  const suspectMap = useMemo(() => buildSuspectLocationMap(story), [story]);
+  const suspectMap = useMemo(
+    () => buildSuspectLocationMap(story, current?.id ?? 0, current?.gameStartHour ?? 0, current?.gameMinutesUsed ?? 0),
+    [story, current?.id, current?.gameStartHour, current?.gameMinutesUsed]
+  );
   const suspectsHere = useMemo(() => getSuspectsAtLocation(suspectMap, currentLocation), [suspectMap, currentLocation]);
 
   const totalMinutes = current ? (current.gameEndHour - current.gameStartHour) * 60 : 0;
@@ -104,9 +132,9 @@ export function PlayPage() {
 
   useEffect(() => {
     if (current && current.status !== 'ACTIVE') {
-      navigate(`/result/${id}`);
+      navigate(`/result/${sessionPublicId}`);
     }
-  }, [current?.status, id, navigate]);
+  }, [current?.status, sessionPublicId, navigate]);
 
   useEffect(() => {
     setFoundEvidence(null);
@@ -155,18 +183,20 @@ export function PlayPage() {
   }, [current]);
 
   async function handleMove(location: string) {
+    if (!sessionPublicId) return;
     try {
-      await moveFn(id, location);
+      await moveFn(sessionPublicId, location);
     } finally {
       setShowLocationModal(false);
     }
   }
 
   async function handleInvestigate() {
+    if (!sessionPublicId) return;
     if (investigating) return;
     setInvestigating(true);
     try {
-      const res = await investigateFn(id);
+      const res = await investigateFn(sessionPublicId);
       setFoundEvidence(res.evidenceFound);
     } finally {
       setInvestigating(false);
@@ -190,18 +220,20 @@ export function PlayPage() {
   }
 
   async function handleSendQuestion(question: string) {
+    if (!sessionPublicId) return;
     if (!selectedSuspect || loading) return;
     setLoading(true);
     try {
-      await ask(id, question, selectedSuspect);
+      await ask(sessionPublicId, question, selectedSuspect);
     } finally {
       setLoading(false);
     }
   }
 
   async function submitAccuse(name: string) {
-    await accuseFn(id, name);
-    navigate(`/result/${id}`);
+    if (!sessionPublicId) return;
+    await accuseFn(sessionPublicId, name);
+    navigate(`/result/${sessionPublicId}`);
   }
 
   if (!current) {
@@ -209,6 +241,11 @@ export function PlayPage() {
   }
 
   const caseTitle = story.title ?? `Case #${current.id}`;
+
+  const suspectHasLeft =
+    viewMode === 'conversation' &&
+    selectedSuspect !== null &&
+    !suspectsHere.some((s) => s.name === selectedSuspect);
 
   if (viewMode === 'conversation' && selectedProfile) {
     return (
@@ -221,6 +258,7 @@ export function PlayPage() {
         currentGameTime={current.currentGameTime}
         loading={loading}
         isTimeUp={isTimeUp}
+        suspectLeft={suspectHasLeft}
         onSend={handleSendQuestion}
         onBack={() => setViewMode('main')}
       />
@@ -237,9 +275,6 @@ export function PlayPage() {
               <h1 className="text-lg md:text-xl font-extrabold text-white">{caseTitle}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-1 rounded-md text-xs font-bold border ${isActive ? 'border-emerald-400/60 text-emerald-300 bg-emerald-900/20' : 'border-red-400/60 text-red-300 bg-red-900/20'}`}>
-                {statusLabel(current.status)}
-              </span>
               <GameClock
                 gameStartHour={current.gameStartHour}
                 gameEndHour={current.gameEndHour}
@@ -267,7 +302,7 @@ export function PlayPage() {
             <section className="space-y-4">
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-gray-100">수사 컨트롤</h2>
+                  <h2 className="text-sm font-semibold text-gray-100">장소</h2>
                   <button
                     onClick={() => setShowLocationModal(true)}
                     className="text-xs px-3 py-1.5 rounded-md border border-gray-500/60 text-gray-200 hover:bg-white/10 transition-colors"
@@ -276,9 +311,6 @@ export function PlayPage() {
                     위치 이동
                   </button>
                 </div>
-                <p className="mt-2 text-sm text-gray-300 leading-relaxed">
-                  장소를 이동하고 용의자를 심문해 단서를 확보한 뒤, 시간이 끝나기 전에 범인을 지목하세요.
-                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {locations.map((loc) => (
                     <span

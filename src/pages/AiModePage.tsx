@@ -28,7 +28,7 @@ export function AiModePage() {
         gameStartHour,
         gameEndHour,
       });
-      navigate(`/play/${session.id}`);
+      navigate(`/play/${session.publicId}`);
     } finally {
       setLoading(false);
     }

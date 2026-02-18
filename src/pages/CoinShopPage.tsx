@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
@@ -29,6 +29,202 @@ const DUMMY_TX: TxRecord[] = [
   { id: 3, desc: '기본 사건 플레이', amount: -10, date: '2026-02-13', type: 'use' },
   { id: 4, desc: '코인 충전 (300C 패키지)', amount: 330, date: '2026-02-10', type: 'charge' },
 ];
+
+// ── 보상형 광고 설정 ──────────────────────────────────────
+const AD_REWARD_COINS = 10;   // 광고 1회당 지급 코인
+const AD_DAILY_LIMIT  = 5;    // 하루 최대 시청 횟수
+const AD_COUNTDOWN    = 5;    // 광고 시청 카운트다운 (초)
+
+// ── 보상형 광고 모달 ──────────────────────────────────────
+function RewardedAdModal({
+  onClose,
+  onRewarded,
+}: {
+  onClose: () => void;
+  onRewarded: () => void;
+}) {
+  const [phase, setPhase] = useState<'watching' | 'done'>('watching');
+  const [countdown, setCountdown] = useState(AD_COUNTDOWN);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current!);
+          setPhase('done');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(intervalRef.current!);
+  }, []);
+
+  function handleClaim() {
+    onRewarded();
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#110d1e] shadow-2xl overflow-hidden">
+
+        {/* 광고 시청 중 */}
+        {phase === 'watching' && (
+          <>
+            <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 flex flex-col items-center justify-center h-52 gap-3">
+              {/* 더미 광고 플레이스홀더 */}
+              <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-accent-pink animate-spin" />
+              <p className="text-sm text-gray-400 mt-1">광고 시청 중...</p>
+              <div className="absolute top-3 right-4 bg-black/60 rounded-lg px-2.5 py-1 text-xs font-bold text-white tabular-nums">
+                {countdown}s
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+                <div
+                  className="h-full bg-accent-pink transition-all duration-1000"
+                  style={{ width: `${((AD_COUNTDOWN - countdown) / AD_COUNTDOWN) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div className="px-5 py-4 text-center">
+              <p className="text-xs text-gray-500">
+                광고를 끝까지 시청하면 <span className="text-accent-pink font-bold">{AD_REWARD_COINS}C</span>가 지급됩니다.
+              </p>
+              <p className="text-[11px] text-gray-600 mt-1">광고 시청 중에는 닫을 수 없습니다.</p>
+            </div>
+          </>
+        )}
+
+        {/* 시청 완료 */}
+        {phase === 'done' && (
+          <div className="px-6 py-8 flex flex-col items-center gap-4 text-center">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-4xl">
+                🎁
+              </div>
+              <div className="absolute inset-0 rounded-full animate-ping bg-emerald-500/10" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white">광고 시청 완료!</h3>
+              <p className="text-gray-400 text-sm mt-1">
+                <span className="text-emerald-400 font-bold text-lg">+{AD_REWARD_COINS}C</span> 를 받을 수 있습니다.
+              </p>
+            </div>
+            <button
+              onClick={handleClaim}
+              className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm transition-colors shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            >
+              코인 받기
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 보상형 광고 섹션 ──────────────────────────────────────
+function RewardedAdSection() {
+  const [usedToday, setUsedToday] = useState(2);   // 더미: 오늘 2회 사용한 것처럼 초기화
+  const [showModal, setShowModal]   = useState(false);
+  const [justEarned, setJustEarned] = useState(false);
+
+  const remaining = AD_DAILY_LIMIT - usedToday;
+  const exhausted = remaining <= 0;
+
+  function handleRewarded() {
+    setUsedToday((prev) => prev + 1);
+    setJustEarned(true);
+    setTimeout(() => setJustEarned(false), 3000);
+  }
+
+  return (
+    <>
+      {showModal && (
+        <RewardedAdModal
+          onClose={() => setShowModal(false)}
+          onRewarded={handleRewarded}
+        />
+      )}
+
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+        {/* 섹션 헤더 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">📺</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-white">무료 코인 적립</p>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
+                  무료
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wide">
+                  준비 중
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-0.5">광고 시청 후 코인을 무료로 적립하세요</p>
+            </div>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <span className="text-lg font-black text-emerald-400">+{AD_REWARD_COINS}C</span>
+            <p className="text-[10px] text-gray-500">1회</p>
+          </div>
+        </div>
+
+        {/* 일일 사용량 바 */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[11px]">
+            <span className="text-gray-500">오늘 사용 현황</span>
+            <span className={exhausted ? 'text-gray-600' : 'text-emerald-400 font-semibold'}>
+              {usedToday} / {AD_DAILY_LIMIT}회
+              {!exhausted && <span className="text-gray-500 font-normal"> ({remaining}회 남음)</span>}
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(usedToday / AD_DAILY_LIMIT) * 100}%`,
+                background: exhausted
+                  ? 'rgb(75,85,99)'
+                  : 'linear-gradient(to right, #10b981, #34d399)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 적립 완료 토스트 */}
+        {justEarned && (
+          <div className="flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 px-3 py-2 text-sm text-emerald-300 font-semibold animate-pulse">
+            <span>✓</span>
+            <span>+{AD_REWARD_COINS}C 적립 완료!</span>
+          </div>
+        )}
+
+        {/* 버튼 */}
+        {exhausted ? (
+          <div className="rounded-xl bg-white/[0.03] border border-white/10 py-3 text-center text-sm text-gray-500">
+            오늘 사용 가능 횟수를 모두 소진했습니다. 내일 다시 이용해주세요.
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowModal(true)}
+            className="w-full py-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-500/50 text-emerald-300 hover:text-emerald-200 font-bold text-sm transition-all flex items-center justify-center gap-2"
+          >
+            <span>▶</span>
+            <span>광고 보고 {AD_REWARD_COINS}C 받기</span>
+          </button>
+        )}
+
+        {/* 안내 문구 */}
+        <p className="text-[10px] text-gray-600 text-center leading-relaxed">
+          정식 출시 시 제공 예정 · 광고 정책 준수 포맷만 적용 · 부정 이용 방지 시스템 적용
+        </p>
+      </div>
+    </>
+  );
+}
 
 // ── 서브 컴포넌트 ─────────────────────────────────────────
 function CoinBadge({ value, size = 'md' }: { value: number; size?: 'sm' | 'md' | 'lg' }) {
@@ -179,6 +375,9 @@ export function CoinShopPage() {
             </div>
             <h1 className="text-2xl font-black text-white">코인 충전소</h1>
             <p className="text-sm text-gray-400 mt-1">코인으로 AI 사건 생성 및 특별 기능을 이용하세요.</p>
+            <p className="text-sm text-red-400 mt-1">현재 코인 충전/적립 기능은 미구현입니다.</p>
+            <p className="text-sm text-red-400 mt-1">정식 출시 시, 유료 충전(결제) 과 보상형 광고(일일 제한) 를 통해 코인을 제공할 계획입니다.</p>
+            <p className="text-sm text-red-400 mt-1">보상형 광고는 정책 준수 가능한 광고 포맷/네트워크에서만 제공되며, 부정 이용 방지 및 이용 제한이 적용됩니다.</p>
           </div>
 
           {/* 현재 보유 코인 */}
@@ -227,6 +426,9 @@ export function CoinShopPage() {
               </div>
             ))}
           </div>
+
+          {/* ── 보상형 광고 ── */}
+          <RewardedAdSection />
 
           {/* ── 패키지 선택 ── */}
           <div>

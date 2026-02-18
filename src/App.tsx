@@ -16,6 +16,7 @@ import { AiModePage } from './pages/AiModePage';
 import { CoinShopPage } from './pages/CoinShopPage';
 import { AdminPage } from './pages/AdminPage';
 import { AdminCaseEditPage } from './pages/AdminCaseEditPage';
+import { CaseBrowsePage } from './pages/CaseBrowsePage';
 
 export default function App() {
   const bootstrap = useAuthStore((s) => s.bootstrap);
@@ -28,6 +29,7 @@ export default function App() {
     <AppLayout>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/cases" element={<CaseBrowsePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />
         <Route path="/ai" element={<ProtectedRoute><AiModePage /></ProtectedRoute>} />

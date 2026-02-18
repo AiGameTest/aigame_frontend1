@@ -1,24 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
-function ChevronIcon() {
-  return (
-    <svg
-      className="inline-block ml-1 w-3 h-3 opacity-60 transition-transform duration-200 group-hover:rotate-180"
-      viewBox="0 0 12 12"
-      fill="none"
-    >
-      <path
-        d="M2 4l4 4 4-4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function CoinIcon({ className = '' }: { className?: string }) {
   return (
     <svg className={`inline-block ${className}`} viewBox="0 0 16 16" fill="none">
@@ -30,19 +12,24 @@ function CoinIcon({ className = '' }: { className?: string }) {
 
 function UserDropdown({
   nickname,
+  profileImageUrl,
   coins,
   onLogout,
 }: {
   nickname: string;
+  profileImageUrl: string;
   coins: number;
   onLogout: () => void;
 }) {
   return (
     <div className="relative group">
-      <button className="flex items-center gap-1.5 px-2 py-1 rounded-md text-sm text-gray-300 hover:text-white hover:bg-dark-surface transition-colors">
-        <span>{nickname}</span>
-        <span className="text-xs text-accent-pink font-semibold">{coins}c</span>
-        <ChevronIcon />
+      {/* 헤더 트리거: 프로필 이미지 */}
+      <button className="flex items-center gap-1.5 px-1.5 py-1 rounded-full hover:bg-dark-surface transition-colors">
+        <img
+          src={profileImageUrl}
+          alt={nickname}
+          className="w-8 h-8 rounded-full object-cover border border-white/15"
+        />
       </button>
 
       <div
@@ -60,12 +47,21 @@ function UserDropdown({
 
         {/* 유저 정보 헤더 */}
         <div className="px-4 py-3 border-b border-dark-border">
-          <p className="text-sm font-semibold text-white">{nickname}</p>
-          <p className="text-xs text-gray-500 mt-0.5">보유 코인</p>
+          <div className="flex items-center gap-2.5">
+            <img
+              src={profileImageUrl}
+              alt={nickname}
+              className="w-9 h-9 rounded-full object-cover border border-white/15"
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{nickname}</p>
+              <p className="text-xs text-gray-500">보유 코인</p>
+            </div>
+          </div>
           {/* 코인 표시 + 구매 링크 */}
           <Link
             to="/coins"
-            className="mt-1.5 flex items-center justify-between group/coin rounded-lg bg-accent-pink/10 border border-accent-pink/20 px-3 py-2 hover:bg-accent-pink/20 transition-colors"
+            className="mt-2 flex items-center justify-between group/coin rounded-lg bg-accent-pink/10 border border-accent-pink/20 px-3 py-2 hover:bg-accent-pink/20 transition-colors"
           >
             <div className="flex items-center gap-1.5">
               <CoinIcon className="w-4 h-4 text-accent-pink" />
@@ -84,15 +80,6 @@ function UserDropdown({
               className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
             >
               프로필
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/coins"
-              className="flex items-center justify-between px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
-            >
-              <span>코인 충전</span>
-              <CoinIcon className="w-3.5 h-3.5 text-accent-pink" />
             </Link>
           </li>
           <li className="border-t border-dark-border mt-1 pt-1">
@@ -122,8 +109,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* 로고 */}
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <span className="text-accent-pink text-2xl">📜</span>
-              <span className="font-bold text-lg text-white tracking-tight">추리 게임</span>
+              <img src="/logo.png" alt="Open Clue" className="h-7 w-7 object-contain" />
+              <span className="font-bold text-lg text-white tracking-tight">Open Clue</span>
             </Link>
           </div>
 
@@ -132,6 +119,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {user ? (
               <UserDropdown
                 nickname={user.nickname}
+                profileImageUrl={user.profileImageUrl}
                 coins={user.coins}
                 onLogout={async () => {
                   await doLogout();

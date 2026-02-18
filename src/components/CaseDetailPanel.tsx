@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   addCaseComment,
@@ -20,14 +20,30 @@ import { useAuthStore } from '../store/authStore';
 type CaseSource = 'basic' | 'user';
 type TabType = '소개' | '댓글';
 
+interface SuspectDetail {
+  name: string;
+  personality?: string;
+  background?: string;
+  imageUrl?: string;
+}
+
+interface VictimDetail {
+  name: string;
+  description?: string;
+}
+
 interface PanelCase {
   id: number;
   title: string;
   description: string;
   difficulty: string;
   previewNarrative: string;
-  suspectNames: string[];
+  setting?: string;
+  victim?: VictimDetail;
+  suspects: SuspectDetail[];
   source: CaseSource;
+  authorNickname?: string;
+  authorProfileImageUrl?: string;
   playCount: number;
   recommendCount: number;
   recommended: boolean;
@@ -58,6 +74,15 @@ interface CaseDetailPanelProps {
   source: CaseSource;
   onClose: () => void;
 }
+
+const SESSION_BUILDING_MESSAGES = [
+  '사건 만드는 중...',
+  '범죄 저지르는 중...',
+  '범죄 현장 만드는 중...',
+  '용의자 알리바이 엮는 중...',
+  '단서 배치하는 중...',
+  '수사 기록 봉인하는 중...',
+];
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -104,7 +129,7 @@ function CommentItem({
               comment.liked ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
             }`}
           >
-            {comment.liked ? '❤️' : '🤍'}
+            {comment.liked ? '♥' : '♡'}
             <span>{comment.likeCount}</span>
           </button>
           {comment.replies !== undefined && (
@@ -139,6 +164,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   const [activeSession, setActiveSession] = useState<SessionSummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [startingMessageIndex, setStartingMessageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<TabType>('소개');
   const [recommending, setRecommending] = useState(false);
 
@@ -153,6 +179,16 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   const replyInputRef = useRef<HTMLInputElement>(null);
 
   const isOpen = caseId !== null;
+  useEffect(() => {
+    if (!starting) {
+      setStartingMessageIndex(0);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setStartingMessageIndex((prev) => (prev + 1) % SESSION_BUILDING_MESSAGES.length);
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [starting]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -186,19 +222,33 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
         .then((cases) => {
           const found = cases.find((c) => c.id === caseId);
           if (!found) return;
-          let narrative = found.summary;
-          let suspectNames: string[] = [];
+          let setting: string | undefined;
+          let victim: VictimDetail | undefined;
+          let suspects: SuspectDetail[] = [];
           try {
             const parsed = JSON.parse(found.scenarioPrompt);
-            if (parsed?.setting) narrative = parsed.setting;
+            if (parsed?.setting) setting = parsed.setting;
+            if (parsed?.victim) {
+              victim = { name: parsed.victim?.name ?? '', description: parsed.victim?.description };
+            }
             if (Array.isArray(parsed?.suspects)) {
-              suspectNames = parsed.suspects.map((s: any) => s?.name ?? '').filter(Boolean);
+              suspects = parsed.suspects
+                .filter((s: any) => s?.name)
+                .map((s: any) => ({
+                  name: s.name,
+                  personality: s.personality,
+                  background: s.background,
+                  imageUrl: s.imageUrl,
+                }));
             }
           } catch {}
           setDetail({
             id: found.id, title: found.title, description: found.summary,
-            difficulty: 'USER', previewNarrative: narrative,
-            suspectNames, source: 'user',
+            difficulty: 'USER', previewNarrative: found.summary,
+            setting, victim, suspects,
+            source: 'user',
+            authorNickname: found.authorNickname,
+            authorProfileImageUrl: found.authorProfileImageUrl,
             playCount: found.playCount ?? 0,
             recommendCount: found.recommendCount ?? 0,
             recommended: found.recommended ?? false,
@@ -219,10 +269,14 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
           setDetail({
             id: d.id, title: d.title, description: d.description,
             difficulty: d.difficulty, previewNarrative: d.previewNarrative,
-            suspectNames: d.suspectNames, source: 'basic',
+            setting: d.setting,
+            victim: d.victim,
+            suspects: d.suspects ?? [],
+            source: 'basic',
             playCount: d.playCount ?? 0,
             recommendCount: d.recommendCount ?? 0,
             recommended: d.recommended ?? false,
+            thumbnailUrl: d.thumbnailUrl,
           });
         })
         .finally(() => setLoading(false));
@@ -258,14 +312,14 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       const session = detail.source === 'user'
         ? await start({ mode: 'USER', publishedUserCaseId: detail.id })
         : await start({ mode: 'BASIC', basicCaseTemplateId: detail.id });
-      navigate(`/play/${session.id}`);
+      navigate(`/play/${session.publicId}`);
     } finally {
       setStarting(false);
     }
   }
 
   function handleContinue() {
-    if (activeSession) navigate(`/play/${activeSession.id}`);
+    if (activeSession) navigate(`/play/${activeSession.publicId}`);
   }
 
   async function handleLike() {
@@ -378,10 +432,10 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
 
   return (
     <>
-      {/* 백드롭 */}
+      
       <div className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
-      {/* 모달 */}
+      
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="relative w-full max-w-4xl bg-[#0f1117] border border-white/10 rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] flex overflow-hidden"
@@ -389,10 +443,10 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
           onClick={(e) => e.stopPropagation()}
         >
 
-          {/* ══ 왼쪽: 이미지 패널 ══ */}
+          
           <div className="hidden md:flex w-[360px] flex-shrink-0 flex-col" style={{ height: '100%' }}>
 
-            {/* 이미지 — flex-1으로 나머지 공간 전부 차지 */}
+            
             <div className="flex-1 relative overflow-hidden min-h-0">
               {loading || !detail ? (
                 <div className={`absolute inset-0 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]}`} />
@@ -417,29 +471,42 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
               )}
             </div>
 
-            {/* 통계 바 */}
+            
             <div className="flex-shrink-0 bg-black/70 border-t border-white/10 px-4 py-3 flex items-center justify-around">
-              <div className="text-center">
+              {detail?.source === 'user' && detail.authorNickname && (
+                <>
+                  <div className="text-center min-w-0 flex-1">
+                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                      {detail.authorProfileImageUrl && (
+                        <img
+                          src={detail.authorProfileImageUrl}
+                          alt={detail.authorNickname}
+                          className="w-4 h-4 rounded-full object-cover border border-white/10 flex-shrink-0"
+                        />
+                      )}
+                      <p className="text-white font-bold text-sm truncate max-w-[80px]">{detail.authorNickname}</p>
+                    </div>
+                    <p className="text-gray-500 text-[11px]">제작자</p>
+                  </div>
+                  <div className="w-px h-8 bg-white/10" />
+                </>
+              )}
+              <div className="text-center flex-1">
                 <p className="text-white font-bold text-base">{(detail?.playCount ?? 0).toLocaleString()}</p>
                 <p className="text-gray-500 text-[11px] mt-0.5">플레이</p>
               </div>
               <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className={`font-bold
-                  text-base transition-colors text-white group-hover:text-red-300`}>
-                  {(detail?.recommendCount ?? 0).toLocaleString()}
-                </p>
-                <p className="text-gray-500 text-[11px] mt-0.5 group-hover:text-red-400 transition-colors">
-                  좋아요
-                </p>
+              <div className="text-center flex-1">
+                <p className="text-white font-bold text-base">{(detail?.recommendCount ?? 0).toLocaleString()}</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">좋아요</p>
               </div>
             </div>
           </div>
 
-          {/* 오른쪽: 정보 패널 */}
+          
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ height: '100%' }}>
 
-            {/* 헤더 */}
+            
             <div className="flex-shrink-0 px-5 pt-5 border-b border-white/10">
               <div className="flex items-start justify-between gap-3 pb-3">
                 <div className="min-w-0">
@@ -454,7 +521,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${DIFFICULTY_STYLE[diffKey] ?? DIFFICULTY_STYLE['MEDIUM']}`}>
                           {DIFFICULTY_LABEL[diffKey] ?? detail.difficulty}
                         </span>
-                        {/* 모바일용 통계 */}
+                        
                         <div className="md:hidden flex items-center gap-2 text-xs text-gray-400">
                           <span>▶ {detail.playCount}</span>
                           <button
@@ -462,7 +529,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                             disabled={recommending || !user}
                             className={`transition-colors ${detail.recommended ? 'text-red-400' : ''}`}
                           >
-                            {detail.recommended ? '❤️' : '🤍'} {detail.recommendCount}
+                            {detail.recommended ? '♥' : '♡'} {detail.recommendCount}
                           </button>
                         </div>
                       </div>
@@ -478,7 +545,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                 </button>
               </div>
 
-              {/* 탭 */}
+              
               <div className={`flex gap-0 transition-opacity duration-150 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {(['소개', '댓글'] as TabType[]).map((tab) => (
                   <button
@@ -499,7 +566,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
               </div>
             </div>
 
-            {/* 콘텐츠 영역 */}
+            
             <div className="flex-1 min-h-0 relative overflow-hidden">
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
@@ -507,39 +574,81 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                 </div>
               ) : !detail ? null : activeTab === '소개' ? (
 
-                /* 소개 탭 */
+                
                 <div className="absolute inset-0 overflow-y-auto">
                   <div className="p-5 space-y-4">
-                    <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">게임 설명</p>
-                      <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-                        {detail.previewNarrative}
-                      </p>
-                    </div>
 
-                    {detail.suspectNames.length > 0 && (
-                      <div>
-                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">용의자</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {detail.suspectNames.map((name) => (
-                            <span
-                              key={name}
-                              className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300 hover:border-white/25 transition-colors"
-                            >
-                              {name}
-                            </span>
+                    
+                    {detail.previewNarrative && (
+                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">게임 설명</p>
+                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                          {detail.previewNarrative}
+                        </p>
+                      </div>
+                    )}
+
+                    
+                    {detail.setting && detail.setting !== detail.previewNarrative && (
+                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">사건 배경</p>
+                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                          {detail.setting}
+                        </p>
+                      </div>
+                    )}
+
+                    
+                    {detail.victim && (detail.victim.name || detail.victim.description) && (
+                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">피해자</p>
+                        {detail.victim.name && (
+                          <p className="text-sm font-semibold text-white mb-1">{detail.victim.name}</p>
+                        )}
+                        {detail.victim.description && (
+                          <p className="text-sm text-gray-300 leading-relaxed">{detail.victim.description}</p>
+                        )}
+                      </div>
+                    )}
+
+                    
+                    {detail.suspects.length > 0 && (
+                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-3">
+                          용의자 {detail.suspects.length}명
+                        </p>
+                        <div className="space-y-3">
+                          {detail.suspects.map((s) => (
+                            <div key={s.name} className="flex items-start gap-2.5">
+                              {s.imageUrl ? (
+                                <img
+                                  src={s.imageUrl}
+                                  alt={s.name}
+                                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-white/8 border border-white/10 flex items-center justify-center flex-shrink-0 text-sm">
+
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-white">{s.name}</p>
+                                {s.personality && (
+                                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{s.personality}</p>
+                                )}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
+
                   </div>
                 </div>
 
               ) : (
 
-                /* 댓글 탭 */
                 <div className="absolute inset-0 flex flex-col">
-                  {/* 댓글 입력 */}
                   {user ? (
                     <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
                       <div className="flex gap-2 items-center">
@@ -551,7 +660,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                         <input
                           ref={commentInputRef}
                           className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-xl px-3 py-2 text-sm outline-none transition-all placeholder:text-gray-600"
-                          placeholder="댓글을 입력하세요..."
+                          placeholder="댓글을 입력해 주세요..."
                           value={commentInput}
                           onChange={(e) => setCommentInput(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
@@ -571,10 +680,10 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                     </div>
                   )}
 
-                  {/* 댓글 목록 */}
+                  
                   <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
                     {comments.length === 0 ? (
-                      <p className="text-center text-gray-500 text-sm py-8">첫 댓글을 남겨보세요!</p>
+                      <p className="text-center text-gray-500 text-sm py-8">첫 댓글을 남겨보세요</p>
                     ) : (
                       <div className="space-y-5">
                         {comments.map((comment) => (
@@ -587,7 +696,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                               onReply={handleReply}
                             />
 
-                            {/* 답글 목록 */}
+                            
                             {comment.replies?.length > 0 && (
                               <div className="ml-11 mt-3 space-y-3 pl-3 border-l border-white/5">
                                 {comment.replies.map((reply) => (
@@ -603,7 +712,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                               </div>
                             )}
 
-                            {/* 답글 입력 */}
+                            
                             {replyTo === comment.id && user && (
                               <div className="ml-11 mt-3 pl-3 border-l border-white/5">
                                 <div className="flex gap-2 items-center">
@@ -615,7 +724,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                                   <input
                                     ref={replyInputRef}
                                     className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all placeholder:text-gray-600"
-                                    placeholder="답글을 입력하세요..."
+                                    placeholder="답글을 입력해 주세요..."
                                     value={replyInput}
                                     onChange={(e) => setReplyInput(e.target.value)}
                                     onKeyDown={(e) => {
@@ -648,7 +757,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
               )}
             </div>
 
-            {/* 하단 버튼 */}
+            
             {!loading && detail && (
               <div className="flex-shrink-0 border-t border-white/10 p-4">
                 <div className="flex gap-2">
@@ -662,7 +771,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                         : 'bg-white/5 border-white/15 text-gray-300 hover:border-white/30 hover:text-white'
                     }`}
                   >
-                    <span>{detail.recommended ? '❤️' : '🤍'}</span>
+                    <span>{detail.recommended ? '♥' : '♡'}</span>
                     <span>{detail.recommendCount}</span>
                   </button>
 
@@ -671,7 +780,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                       className="flex-1 py-2.5 rounded-xl border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors"
                       onClick={handleContinue}
                     >
-                      ▶ 이어하기
+                      이어하기
                     </button>
                   )}
                   <button
@@ -679,7 +788,12 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                     onClick={handleStart}
                     disabled={starting}
                   >
-                    {starting ? '세션 생성 중...' : activeSession ? '새로 시작하기' : '▶ 시작하기'}
+                    {starting ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        {SESSION_BUILDING_MESSAGES[startingMessageIndex]}
+                      </span>
+                    ) : activeSession ? '새로 시작하기' : '▶ 시작하기'}
                   </button>
                 </div>
               </div>
@@ -690,3 +804,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     </>
   );
 }
+
+
+
+

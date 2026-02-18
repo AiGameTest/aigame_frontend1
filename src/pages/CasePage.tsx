@@ -146,7 +146,7 @@ export function CasePage() {
         detail.source === 'user'
           ? await start({ mode: 'USER', publishedUserCaseId: detail.id })
           : await start({ mode: 'BASIC', basicCaseTemplateId: detail.id });
-      navigate(`/play/${session.id}`);
+      navigate(`/play/${session.publicId}`);
     } finally {
       setLoading(false);
     }
@@ -221,7 +221,7 @@ export function CasePage() {
           </div>
           <button
             className="px-5 py-2.5 rounded-lg bg-accent-pink text-white font-bold hover:opacity-90 transition-opacity"
-            onClick={() => navigate(`/play/${activeSession.id}`)}
+            onClick={() => navigate(`/play/${activeSession.publicId}`)}
           >
             이어서 플레이
           </button>

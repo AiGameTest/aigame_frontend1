@@ -191,28 +191,28 @@ export async function startSession(payload: StartSessionRequest): Promise<GameSe
   return data;
 }
 
-export async function getSession(sessionId: number): Promise<GameSessionResponse> {
-  const { data } = await api.get<GameSessionResponse>(`/sessions/${sessionId}`);
+export async function getSession(sessionPublicId: string): Promise<GameSessionResponse> {
+  const { data } = await api.get<GameSessionResponse>(`/sessions/${sessionPublicId}`);
   return data;
 }
 
-export async function askQuestion(sessionId: number, payload: AskQuestionRequest): Promise<AskQuestionResponse> {
-  const { data } = await api.post<AskQuestionResponse>(`/sessions/${sessionId}/chat`, payload);
+export async function askQuestion(sessionPublicId: string, payload: AskQuestionRequest): Promise<AskQuestionResponse> {
+  const { data } = await api.post<AskQuestionResponse>(`/sessions/${sessionPublicId}/chat`, payload);
   return data;
 }
 
-export async function accuse(sessionId: number, payload: AccuseRequest): Promise<AccuseResponse> {
-  const { data } = await api.post<AccuseResponse>(`/sessions/${sessionId}/accuse`, payload);
+export async function accuse(sessionPublicId: string, payload: AccuseRequest): Promise<AccuseResponse> {
+  const { data } = await api.post<AccuseResponse>(`/sessions/${sessionPublicId}/accuse`, payload);
   return data;
 }
 
-export async function moveToLocation(sessionId: number, payload: MoveRequest): Promise<MoveResponse> {
-  const { data } = await api.post<MoveResponse>(`/sessions/${sessionId}/move`, payload);
+export async function moveToLocation(sessionPublicId: string, payload: MoveRequest): Promise<MoveResponse> {
+  const { data } = await api.post<MoveResponse>(`/sessions/${sessionPublicId}/move`, payload);
   return data;
 }
 
-export async function investigate(sessionId: number): Promise<InvestigateResponse> {
-  const { data } = await api.post<InvestigateResponse>(`/sessions/${sessionId}/investigate`);
+export async function investigate(sessionPublicId: string): Promise<InvestigateResponse> {
+  const { data } = await api.post<InvestigateResponse>(`/sessions/${sessionPublicId}/investigate`);
   return data;
 }
 
