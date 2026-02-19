@@ -2,6 +2,8 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { createUserCase, getUserCase, publishUserCase, updateUserCase, uploadFile } from '../api/client';
+import { ThumbnailCropModal } from '../components/ThumbnailCropModal';
+import { CroppedThumbnail } from '../components/CroppedThumbnail';
 
 interface TimelineItem {
   time: string;
@@ -52,6 +54,10 @@ export function CreatePage() {
   const [gameStartHour, setGameStartHour] = useState(12);
   const [gameEndHour, setGameEndHour] = useState(18);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailCropX, setThumbnailCropX] = useState<number | null>(null);
+  const [thumbnailCropY, setThumbnailCropY] = useState<number | null>(null);
+  const [thumbnailCropWidth, setThumbnailCropWidth] = useState<number | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [message, setMessage] = useState('');
@@ -72,6 +78,9 @@ export function CreatePage() {
         setGameStartHour(draft.gameStartHour);
         setGameEndHour(draft.gameEndHour);
         setThumbnailUrl(draft.thumbnailUrl ?? '');
+        setThumbnailCropX(draft.thumbnailCropX ?? null);
+        setThumbnailCropY(draft.thumbnailCropY ?? null);
+        setThumbnailCropWidth(draft.thumbnailCropWidth ?? null);
         try {
           const parsed = JSON.parse(draft.scenarioPrompt);
           setSetting(parsed.setting ?? '');
@@ -99,6 +108,11 @@ export function CreatePage() {
   }, [editId]);
 
   const totalHours = gameEndHour - gameStartHour;
+  const hasThumbnailCrop =
+    thumbnailUrl !== '' &&
+    thumbnailCropX != null &&
+    thumbnailCropY != null &&
+    thumbnailCropWidth != null;
 
   const scenarioPrompt = useMemo(() => {
     const seed = {
@@ -168,6 +182,9 @@ export function CreatePage() {
             gameStartHour,
             gameEndHour,
             thumbnailUrl: thumbnailUrl || undefined,
+            thumbnailCropX: thumbnailCropX ?? undefined,
+            thumbnailCropY: thumbnailCropY ?? undefined,
+            thumbnailCropWidth: thumbnailCropWidth ?? undefined,
           })
         : await createUserCase({
             title,
@@ -176,6 +193,9 @@ export function CreatePage() {
             gameStartHour,
             gameEndHour,
             thumbnailUrl: thumbnailUrl || undefined,
+            thumbnailCropX: thumbnailCropX ?? undefined,
+            thumbnailCropY: thumbnailCropY ?? undefined,
+            thumbnailCropWidth: thumbnailCropWidth ?? undefined,
           });
 
       setDraftId(saved.id);
@@ -224,6 +244,10 @@ export function CreatePage() {
     try {
       const { url } = await uploadFile(file, 'thumbnails');
       setThumbnailUrl(url);
+      // 새 이미지로 교체 시 이전 크롭 좌표 초기화
+      setThumbnailCropX(null);
+      setThumbnailCropY(null);
+      setThumbnailCropWidth(null);
     } catch {
       setError('썸네일 업로드에 실패했습니다.');
     } finally {
@@ -262,6 +286,7 @@ export function CreatePage() {
   }
 
   return (
+    <>
     <form className="max-w-4xl mx-auto space-y-5" onSubmit={saveAndPublish}>
       {loadingDraft && (
         <div className="text-center py-8 text-gray-400">사건 정보를 불러오는 중...</div>
@@ -297,10 +322,24 @@ export function CreatePage() {
           <label className="block text-xs text-gray-500 mb-1">썸네일 이미지 (선택)</label>
           <div className="flex items-center gap-3">
             {thumbnailUrl ? (
-              <img src={thumbnailUrl} alt="썸네일" className="w-24 h-16 rounded-lg object-cover border border-white/10" />
+              hasThumbnailCrop ? (
+                <div className="relative w-24 aspect-[16/10] rounded-lg overflow-hidden border border-white/10">
+                  <CroppedThumbnail
+                    src={thumbnailUrl}
+                    alt="썸네일"
+                    cropX={thumbnailCropX!}
+                    cropY={thumbnailCropY!}
+                    cropWidth={thumbnailCropWidth!}
+                  />
+                </div>
+              ) : (
+                <div className="relative w-24 aspect-[16/10] rounded-lg overflow-hidden border border-white/10">
+                  <img src={thumbnailUrl} alt="썸네일" className="absolute inset-0 w-full h-full object-cover" />
+                </div>
+              )
             ) : (
-              <div className="w-24 h-16 rounded-lg border border-dashed border-white/20 bg-zinc-900 flex items-center justify-center text-xs text-gray-500">
-                미리보기
+              <div className="relative w-24 aspect-[16/10] rounded-lg border border-dashed border-white/20 bg-zinc-900">
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">미리보기</div>
               </div>
             )}
             <div className="flex flex-col gap-1">
@@ -324,13 +363,27 @@ export function CreatePage() {
                 {uploading['thumbnail'] ? '업로드 중...' : thumbnailUrl ? '썸네일 변경' : '썸네일 업로드'}
               </button>
               {thumbnailUrl && (
-                <button
-                  type="button"
-                  className="text-xs text-red-300 hover:text-red-200"
-                  onClick={() => setThumbnailUrl('')}
-                >
-                  썸네일 삭제
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="text-xs px-3 py-1.5 rounded-md border border-white/15 text-gray-300 hover:text-white hover:border-white/30 transition-colors"
+                    onClick={() => setShowCropModal(true)}
+                  >
+                    {thumbnailCropWidth != null ? '위치 재조절' : '위치 조절'}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-red-300 hover:text-red-200"
+                    onClick={() => {
+                      setThumbnailUrl('');
+                      setThumbnailCropX(null);
+                      setThumbnailCropY(null);
+                      setThumbnailCropWidth(null);
+                    }}
+                  >
+                    썸네일 삭제
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -528,5 +581,23 @@ export function CreatePage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
       {message && <p className="text-sm text-green-400">{message}</p>}
     </form>
+
+    {showCropModal && thumbnailUrl && (
+      <ThumbnailCropModal
+        imageUrl={thumbnailUrl}
+        initialCrop={
+          thumbnailCropX != null && thumbnailCropY != null && thumbnailCropWidth != null
+            ? { cropX: thumbnailCropX, cropY: thumbnailCropY, cropWidth: thumbnailCropWidth }
+            : undefined
+        }
+        onConfirm={({ cropX, cropY, cropWidth }) => {
+          setThumbnailCropX(cropX);
+          setThumbnailCropY(cropY);
+          setThumbnailCropWidth(cropWidth);
+        }}
+        onClose={() => setShowCropModal(false)}
+      />
+    )}
+    </>
   );
 }

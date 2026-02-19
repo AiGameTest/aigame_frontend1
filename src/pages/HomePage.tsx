@@ -4,6 +4,7 @@ import { listCases, listPublishedUserCases } from '../api/client';
 import type { CaseTemplateSummary, UserCaseDraftResponse } from '../api/types';
 import { CaseCard } from '../components/CaseCard';
 import { CaseDetailPanel } from '../components/CaseDetailPanel';
+import { CroppedThumbnail } from '../components/CroppedThumbnail';
 import { useSessionStore } from '../store/sessionStore';
 import { useAuthStore } from '../store/authStore';
 
@@ -382,13 +383,28 @@ function CommunityCaseCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: 
     'from-lime-900 to-green-800',
   ];
   const colorIdx = c.id % colors.length;
+  const hasCrop =
+    c.thumbnailUrl != null &&
+    c.thumbnailCropX != null &&
+    c.thumbnailCropY != null &&
+    c.thumbnailCropWidth != null;
 
   return (
     <div className="block group cursor-pointer" onClick={() => onClick(c.id)}>
       <div className="w-[220px] md:w-[260px]">
         <div className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${colors[colorIdx]} mb-2`}>
           {c.thumbnailUrl ? (
-            <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+            hasCrop ? (
+              <CroppedThumbnail
+                src={c.thumbnailUrl}
+                alt={c.title}
+                cropX={c.thumbnailCropX!}
+                cropY={c.thumbnailCropY!}
+                cropWidth={c.thumbnailCropWidth!}
+              />
+            ) : (
+              <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+            )
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-5xl opacity-60">🔎</span>

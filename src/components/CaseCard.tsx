@@ -1,4 +1,5 @@
-import type { CaseTemplateSummary } from '../api/types';
+﻿import type { CaseTemplateSummary } from '../api/types';
+import { CroppedThumbnail } from './CroppedThumbnail';
 
 const DIFFICULTY_BADGE: Record<string, string> = {
   EASY: 'badge-easy',
@@ -22,6 +23,11 @@ interface CaseCardProps {
 
 export function CaseCard({ c, onClick }: CaseCardProps) {
   const colorIdx = c.id % THUMBNAIL_COLORS.length;
+  const hasCrop =
+    c.thumbnailUrl != null &&
+    c.thumbnailCropX != null &&
+    c.thumbnailCropY != null &&
+    c.thumbnailCropWidth != null;
 
   return (
     <div className="block group cursor-pointer" onClick={() => onClick(c.id)}>
@@ -31,7 +37,17 @@ export function CaseCard({ c, onClick }: CaseCardProps) {
           className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} mb-2`}
         >
           {c.thumbnailUrl ? (
-            <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+            hasCrop ? (
+              <CroppedThumbnail
+                src={c.thumbnailUrl}
+                alt={c.title}
+                cropX={c.thumbnailCropX!}
+                cropY={c.thumbnailCropY!}
+                cropWidth={c.thumbnailCropWidth!}
+              />
+            ) : (
+              <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+            )
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-5xl opacity-60">🔎</span>

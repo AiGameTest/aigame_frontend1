@@ -38,6 +38,9 @@ export interface AdminCaseTemplateResponse {
   gameStartHour: number;
   gameEndHour: number;
   thumbnailUrl?: string;
+  thumbnailCropX?: number;
+  thumbnailCropY?: number;
+  thumbnailCropWidth?: number;
   playCount: number;
   recommendCount: number;
   createdAt: string;
@@ -52,6 +55,9 @@ export interface AdminUpdateCaseTemplateRequest {
   gameStartHour?: number;
   gameEndHour?: number;
   thumbnailUrl?: string;
+  thumbnailCropX?: number;
+  thumbnailCropY?: number;
+  thumbnailCropWidth?: number;
 }
 
 export interface AdminUpdateUserCaseRequest {
@@ -62,6 +68,9 @@ export interface AdminUpdateUserCaseRequest {
   gameStartHour?: number;
   gameEndHour?: number;
   thumbnailUrl?: string;
+  thumbnailCropX?: number;
+  thumbnailCropY?: number;
+  thumbnailCropWidth?: number;
 }
 
 export interface CaseTemplateSummary {
@@ -70,6 +79,9 @@ export interface CaseTemplateSummary {
   description: string;
   difficulty: string;
   thumbnailUrl?: string;
+  thumbnailCropX?: number;
+  thumbnailCropY?: number;
+  thumbnailCropWidth?: number;
   playCount: number;
   recommendCount: number;
 }
@@ -94,8 +106,8 @@ export interface CaseTemplateDetail extends CaseTemplateSummary {
   recommended?: boolean;
 }
 
-export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
-export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; }
+export interface CreateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; thumbnailCropX?: number; thumbnailCropY?: number; thumbnailCropWidth?: number; }
+export interface UpdateUserCaseDraftRequest { title: string; summary: string; scenarioPrompt: string; gameStartHour?: number; gameEndHour?: number; thumbnailUrl?: string; thumbnailCropX?: number; thumbnailCropY?: number; thumbnailCropWidth?: number; }
 
 export interface UserCaseDraftResponse {
   id: number;
@@ -111,6 +123,9 @@ export interface UserCaseDraftResponse {
   gameStartHour: number;
   gameEndHour: number;
   thumbnailUrl?: string;
+  thumbnailCropX?: number;
+  thumbnailCropY?: number;
+  thumbnailCropWidth?: number;
   playCount: number;
   recommendCount: number;
   recommended?: boolean;

@@ -233,6 +233,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
           } catch {}
           setDetail({
             id: found.id, title: found.title, description: found.summary,
+            previewNarrative: found.summary,
             setting, victim, suspects,
             source: 'user',
             authorNickname: found.authorNickname,
@@ -256,6 +257,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
         .then((d) => {
           setDetail({
             id: d.id, title: d.title, description: d.description,
+            previewNarrative: d.previewNarrative ?? '',
             setting: d.setting,
             victim: d.victim,
             suspects: d.suspects ?? [],
