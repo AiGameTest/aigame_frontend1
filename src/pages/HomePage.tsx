@@ -5,6 +5,7 @@ import type { CaseTemplateSummary, UserCaseDraftResponse } from '../api/types';
 import { CaseCard } from '../components/CaseCard';
 import { CaseDetailPanel } from '../components/CaseDetailPanel';
 import { useSessionStore } from '../store/sessionStore';
+import { useAuthStore } from '../store/authStore';
 
 const BANNERS = [
   {
@@ -90,7 +91,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
         >
           {/* ── 배경 레이어 ── */}
           <div className="absolute inset-0 bg-[#06080d] pointer-events-none overflow-hidden">
-            {/* orb 1 — pink */}
             <div
               className="absolute rounded-full pointer-events-none"
               style={{
@@ -100,7 +100,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 filter: 'blur(55px)',
               }}
             />
-            {/* orb 2 — teal */}
             <div
               className="absolute rounded-full pointer-events-none"
               style={{
@@ -110,7 +109,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 filter: 'blur(55px)',
               }}
             />
-            {/* orb 3 — indigo */}
             <div
               className="absolute rounded-full pointer-events-none"
               style={{
@@ -411,6 +409,9 @@ function CommunityCaseCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: 
 
 // ── 메인 페이지 ───────────────────────────────────────────
 export function HomePage() {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+
   const [cases, setCases] = useState<CaseTemplateSummary[]>([]);
   const [communityCases, setCommunityCases] = useState<UserCaseDraftResponse[]>([]);
   const [bannerIdx, setBannerIdx] = useState(0);
@@ -439,6 +440,14 @@ export function HomePage() {
     setSelectedCaseId(id);
   }
 
+  function handleAiModeClick() {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowAiModal(true);
+  }
+
   const banner = BANNERS[bannerIdx];
 
   return (
@@ -465,7 +474,7 @@ export function HomePage() {
       {/* 직접 만들기 */}
       <ScrollSectionPlain title="직접" accent="만들기">
         <DirectMakeCard />
-        <AiMakeCard onClick={() => setShowAiModal(true)} />
+        <AiMakeCard onClick={handleAiModeClick} />
       </ScrollSectionPlain>
 
       {/* 기본 사건 */}
