@@ -36,7 +36,6 @@ interface PanelCase {
   id: number;
   title: string;
   description: string;
-  difficulty: string;
   previewNarrative: string;
   setting?: string;
   victim?: VictimDetail;
@@ -49,16 +48,6 @@ interface PanelCase {
   recommended: boolean;
   thumbnailUrl?: string;
 }
-
-const DIFFICULTY_LABEL: Record<string, string> = {
-  EASY: '쉬움', MEDIUM: '보통', HARD: '어려움', USER: '커스텀',
-};
-const DIFFICULTY_STYLE: Record<string, string> = {
-  EASY: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  MEDIUM: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  HARD: 'bg-red-500/20 text-red-300 border-red-500/30',
-  USER: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
-};
 
 const THUMBNAIL_COLORS = [
   'from-purple-900 via-pink-900 to-rose-900',
@@ -244,7 +233,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
           } catch {}
           setDetail({
             id: found.id, title: found.title, description: found.summary,
-            difficulty: 'USER', previewNarrative: found.summary,
             setting, victim, suspects,
             source: 'user',
             authorNickname: found.authorNickname,
@@ -268,7 +256,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
         .then((d) => {
           setDetail({
             id: d.id, title: d.title, description: d.description,
-            difficulty: d.difficulty, previewNarrative: d.previewNarrative,
             setting: d.setting,
             victim: d.victim,
             suspects: d.suspects ?? [],
@@ -426,7 +413,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   }
 
   const colorIdx = detail ? detail.id % THUMBNAIL_COLORS.length : 0;
-  const diffKey = detail?.difficulty?.toUpperCase() ?? 'MEDIUM';
 
   if (!isOpen) return null;
 
@@ -518,10 +504,6 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   ) : (
                     <>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${DIFFICULTY_STYLE[diffKey] ?? DIFFICULTY_STYLE['MEDIUM']}`}>
-                          {DIFFICULTY_LABEL[diffKey] ?? detail.difficulty}
-                        </span>
-                        
                         <div className="md:hidden flex items-center gap-2 text-xs text-gray-400">
                           <span>▶ {detail.playCount}</span>
                           <button

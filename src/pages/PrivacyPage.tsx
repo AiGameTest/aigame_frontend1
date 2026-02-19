@@ -5,11 +5,10 @@ export function PrivacyPage() {
       <div className="mb-10">
         <p className="text-xs uppercase tracking-[0.2em] text-accent-pink/70 font-semibold mb-2">Legal</p>
         <h1 className="text-3xl font-black text-white">개인정보처리방침</h1>
-        <p className="text-sm text-gray-500 mt-2">시행일: 2026년 2월 19일 · 최종 수정일: 2026년 2월 19일</p>
+        <p className="text-sm text-gray-500 mt-2">시행일: 정식 출시 시 재안내 · 최종 수정일: 2026년 2월 19일</p>
       </div>
 
       <div className="space-y-10 text-sm text-gray-300 leading-relaxed">
-
         {/* 개요 */}
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 text-gray-400">
           Open Clue(이하 "서비스")는 「개인정보 보호법」 및 관련 법령을 준수하며, 이용자의 개인정보를 보호하기 위해 본 개인정보처리방침을 수립·공개합니다. 본 방침은 서비스가 수집하는 개인정보의 항목, 수집 목적, 보유 기간, 제3자 제공 여부 등을 안내합니다.
@@ -22,8 +21,7 @@ export function PrivacyPage() {
           <Table
             headers={['제공자', '수집 항목', '수집 목적']}
             rows={[
-              ['카카오', '이메일 주소, 프로필 이미지', '회원 식별 및 서비스 제공'],
-              ['구글', '이메일 주소, 프로필 이미지', '회원 식별 및 서비스 제공'],
+              ['카카오', '닉네임', '회원 식별 및 서비스 제공'],
             ]}
           />
           <p className="mt-4 font-semibold text-white mb-2">② 서비스 이용 중 자동 수집 항목</p>

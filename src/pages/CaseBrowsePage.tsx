@@ -7,12 +7,6 @@ import { CaseDetailPanel } from '../components/CaseDetailPanel';
 type Tab = 'basic' | 'custom';
 type SortOrder = 'popular' | 'recent';
 
-const DIFFICULTY_BADGE: Record<string, string> = {
-  EASY: 'badge-easy',
-  MEDIUM: 'badge-medium',
-  HARD: 'badge-hard',
-};
-
 const BASIC_COLORS = [
   'from-purple-900 to-pink-800',
   'from-blue-900 to-cyan-800',
@@ -41,11 +35,6 @@ function BasicCaseGridCard({ c, onClick }: { c: CaseTemplateSummary; onClick: (i
             <span className="text-5xl opacity-60">🔎</span>
           </div>
         )}
-        <div className="absolute top-2 left-2">
-          <span className={`badge ${DIFFICULTY_BADGE[c.difficulty?.toUpperCase()] ?? 'badge-medium'}`}>
-            {c.difficulty}
-          </span>
-        </div>
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
             사건 보기

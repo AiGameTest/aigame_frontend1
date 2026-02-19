@@ -5,7 +5,7 @@ export function TermsPage() {
       <div className="mb-10">
         <p className="text-xs uppercase tracking-[0.2em] text-accent-pink/70 font-semibold mb-2">Legal</p>
         <h1 className="text-3xl font-black text-white">이용약관</h1>
-        <p className="text-sm text-gray-500 mt-2">시행일: 2026년 2월 19일 · 최종 수정일: 2026년 2월 19일</p>
+        <p className="text-sm text-gray-500 mt-2">시행일: 정식 출시 시 재안내 · 최종 수정일: 2026년 2월 19일</p>
       </div>
 
       <div className="space-y-10 text-sm text-gray-300 leading-relaxed">

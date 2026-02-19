@@ -13,16 +13,15 @@ function CoinIcon({ className = '' }: { className?: string }) {
 function UserDropdown({
   nickname,
   profileImageUrl,
-  coins,
   onLogout,
 }: {
   nickname: string;
   profileImageUrl: string;
-  coins: number;
   onLogout: () => void;
 }) {
   return (
     <div className="relative group">
+      {/* 헤더 트리거: 프로필 이미지 */}
       <button className="flex items-center gap-1.5 px-1.5 py-1 rounded-full hover:bg-dark-surface transition-colors">
         <img
           src={profileImageUrl}
@@ -41,8 +40,10 @@ function UserDropdown({
           transition-all duration-200
         "
       >
+        {/* hover gap 방지 브릿지 */}
         <div className="absolute -top-1 left-0 right-0 h-2" />
 
+        {/* 유저 정보 헤더 */}
         <div className="px-4 py-3 border-b border-dark-border">
           <div className="flex items-center gap-2.5">
             <img
@@ -52,21 +53,9 @@ function UserDropdown({
             />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{nickname}</p>
-              <p className="text-xs text-gray-500">보유 코인</p>
             </div>
           </div>
-          <Link
-            to="/coins"
-            className="mt-2 flex items-center justify-between group/coin rounded-lg bg-accent-pink/10 border border-accent-pink/20 px-3 py-2 hover:bg-accent-pink/20 transition-colors"
-          >
-            <div className="flex items-center gap-1.5">
-              <CoinIcon className="w-4 h-4 text-accent-pink" />
-              <span className="text-sm font-bold text-accent-pink">{coins.toLocaleString()} C</span>
-            </div>
-            <span className="text-[11px] text-accent-pink/70 group-hover/coin:text-accent-pink transition-colors">
-              충전 →
-            </span>
-          </Link>
+
         </div>
 
         <ul className="py-1.5">
@@ -135,6 +124,7 @@ function AppFooter() {
   );
 }
 
+// PlayPage는 전체화면 레이아웃이라 footer 불필요
 const NO_FOOTER_PATHS = ['/play/'];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -169,15 +159,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* 우측 유저 영역 */}
           <div className="flex items-center gap-2">
             {user ? (
-              <UserDropdown
-                nickname={user.nickname}
-                profileImageUrl={user.profileImageUrl}
-                coins={user.coins}
-                onLogout={async () => {
-                  await doLogout();
-                  navigate('/login');
-                }}
-              />
+              <>
+                <Link
+                  to="/coins"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-500/15 border border-red-500/30 hover:bg-red-500/25 transition-colors"
+                >
+                  <CoinIcon className="w-4 h-4 text-red-400" />
+                  <span className="text-sm font-bold text-red-400">{user.coins.toLocaleString()} C</span>
+                </Link>
+                <UserDropdown
+                  nickname={user.nickname}
+                  profileImageUrl={user.profileImageUrl}
+                  onLogout={async () => {
+                    await doLogout();
+                    navigate('/login');
+                  }}
+                />
+              </>
             ) : (
               <Link to="/login" className="btn text-xs px-3 py-1.5 rounded-full">
                 로그인
