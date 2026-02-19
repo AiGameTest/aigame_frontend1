@@ -30,7 +30,7 @@ function formatHour(h: number): string {
   return `${period} ${display === 0 ? 12 : display}시`;
 }
 
-// ── AI 모드 모달 ──────────────────────────────────────────
+// ── AI 모드 모달 (Cinematic) ───────────────────────────────
 function AiModeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const start = useSessionStore((s) => s.start);
@@ -41,8 +41,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
   const [gameStartHour, setGameStartHour] = useState(12);
   const [gameEndHour, setGameEndHour] = useState(18);
   const [loading, setLoading] = useState(false);
-
-  const totalHours = gameEndHour - gameStartHour;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -85,82 +83,122 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
       />
 
       {/* 모달 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="relative w-full max-w-lg rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/10">
-
-          {/* 헤더 — 그라디언트 배경 */}
-          <div className="relative bg-gradient-to-br from-[#0d1f2d] via-[#0a1628] to-[#110d1f] px-6 pt-8 pb-6 overflow-hidden">
-            {/* 배경 장식 원 */}
-            <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
-
-            {/* 닫기 */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
-
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-2xl">🤖</span>
-                <span className="text-[11px] uppercase tracking-[0.2em] text-teal-400 font-semibold">AI Murder Mystery</span>
-              </div>
-              <h2 className="text-3xl font-black text-white leading-tight">
-                AI 사건 생성
-              </h2>
-              <p className="text-sm text-gray-400 mt-1.5">
-                원하는 설정을 입력하면 AI가 독창적인 사건을 만들어줍니다.
-              </p>
-            </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div
+          className="relative w-full max-w-[520px] rounded-3xl overflow-hidden border border-white/[0.08] shadow-[0_32px_80px_rgba(0,0,0,0.75),0_0_0_1px_rgba(255,255,255,0.04)] pointer-events-auto"
+          style={{ animation: 'modalIn 0.35s cubic-bezier(0.22,1,0.36,1) both' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ── 배경 레이어 ── */}
+          <div className="absolute inset-0 bg-[#06080d] pointer-events-none overflow-hidden">
+            {/* orb 1 — pink */}
+            <div
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                width: 320, height: 320,
+                top: -80, left: -80,
+                background: 'radial-gradient(circle, rgba(255,77,109,0.45), transparent 65%)',
+                filter: 'blur(55px)',
+                animation: 'orbIn 0.8s 0.1s ease forwards',
+                opacity: 0,
+              }}
+            />
+            {/* orb 2 — teal */}
+            <div
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                width: 260, height: 260,
+                bottom: -60, right: -40,
+                background: 'radial-gradient(circle, rgba(20,184,166,0.3), transparent 65%)',
+                filter: 'blur(55px)',
+                animation: 'orbIn 0.8s 0.2s ease forwards',
+                opacity: 0,
+              }}
+            />
+            {/* orb 3 — indigo */}
+            <div
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                width: 180, height: 180,
+                top: '40%', left: '55%',
+                background: 'radial-gradient(circle, rgba(99,102,241,0.22), transparent 65%)',
+                filter: 'blur(55px)',
+                animation: 'orbIn 0.8s 0.3s ease forwards',
+                opacity: 0,
+              }}
+            />
           </div>
 
-          {/* 폼 영역 */}
-          <div className="bg-[#0c0e14] px-6 py-5 max-h-[60vh] overflow-y-auto">
-            <form onSubmit={handleSubmit} className="space-y-4">
+          {/* ── 닫기 버튼 ── */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full border border-white/10 bg-white/[0.06] text-white/40 hover:bg-white/[0.12] hover:text-white hover:border-white/20 transition-all flex items-center justify-center text-sm"
+          >
+            ✕
+          </button>
 
-              {/* 장소 / 배경 */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  <span className="text-teal-400">01</span> 장소 / 배경
-                </label>
-                <input
-                  className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/70 focus:ring-2 focus:ring-teal-500/20 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-gray-600"
-                  value={setting}
-                  onChange={(e) => setSetting(e.target.value)}
-                  placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
-                />
+          {/* ── 콘텐츠 ── */}
+          <div className="relative z-[1] px-8 pt-8 pb-7">
+
+            {/* 헤더 */}
+            <div className="mb-6" style={{ animation: 'rowIn 0.5s 0.1s ease both' }}>
+              <p className="text-[10px] tracking-[0.28em] uppercase font-bold mb-2.5" style={{ color: 'rgba(255,77,109,0.75)' }}>
+                AI Murder Mystery Generator
+              </p>
+              <h2
+                className="leading-[0.92] text-white"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 'clamp(38px, 7vw, 48px)', letterSpacing: '0.04em' }}
+              >
+                사건을<br /><span className="text-[#ff4d6d]">설계</span>하라
+              </h2>
+              <p className="mt-2 text-xs text-white/30 leading-relaxed">
+                설정을 입력하면 AI가 매번 새로운 사건을 만들어드립니다.
+              </p>
+            </div>
+
+            {/* 구분선 */}
+            <div className="h-px bg-white/[0.06] -mx-8 mb-6" style={{ animation: 'rowIn 0.5s 0.15s ease both' }} />
+
+            {/* 폼 */}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+              {/* 장소 */}
+              <div style={{ animation: 'rowIn 0.45s 0.18s ease both' }}>
+                <FloatField label="장소 / 배경">
+                  <input
+                    className="cin-input"
+                    value={setting}
+                    onChange={(e) => setSetting(e.target.value)}
+                    placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
+                  />
+                </FloatField>
               </div>
 
-              {/* 피해자 설정 */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  <span className="text-teal-400">02</span> 피해자 설정
-                </label>
-                <input
-                  className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/70 focus:ring-2 focus:ring-teal-500/20 text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-gray-600"
-                  value={victimProfile}
-                  onChange={(e) => setVictimProfile(e.target.value)}
-                  placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
-                />
+              {/* 피해자 */}
+              <div style={{ animation: 'rowIn 0.45s 0.24s ease both' }}>
+                <FloatField label="피해자 설정">
+                  <input
+                    className="cin-input"
+                    value={victimProfile}
+                    onChange={(e) => setVictimProfile(e.target.value)}
+                    placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
+                  />
+                </FloatField>
               </div>
 
               {/* 용의자 수 */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  <span className="text-teal-400">03</span> 용의자 수
-                </label>
-                <div className="flex gap-2">
+              <div style={{ animation: 'rowIn 0.45s 0.30s ease both' }}>
+                <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">용의자 수</p>
+                <div className="grid grid-cols-4 gap-2">
                   {[3, 4, 5, 6].map((n) => (
                     <button
                       key={n}
                       type="button"
                       onClick={() => setSuspectCount(n)}
-                      className={`flex-1 py-2.5 rounded-xl border text-sm font-bold transition-all ${
+                      className={`py-2.5 rounded-xl border font-bold text-sm transition-all ${
                         suspectCount === n
-                          ? 'bg-teal-500/20 border-teal-500/60 text-teal-300 shadow-[0_0_12px_rgba(20,184,166,0.2)]'
-                          : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                          ? 'bg-[rgba(255,77,109,0.15)] border-[rgba(255,77,109,0.6)] text-white shadow-[0_0_10px_rgba(255,77,109,0.2)]'
+                          : 'bg-white/[0.04] border-white/[0.09] text-white/40 hover:bg-[rgba(255,77,109,0.08)] hover:border-[rgba(255,77,109,0.3)] hover:text-white/80'
                       }`}
                     >
                       {n}명
@@ -169,67 +207,130 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              {/* 수사 시간 설정 */}
-              <div className="space-y-2 rounded-xl bg-white/[0.03] border border-white/8 p-4">
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                  <span className="text-teal-400">04</span> 수사 시간 설정
-                </label>
+              {/* 수사 시간 */}
+              <div style={{ animation: 'rowIn 0.45s 0.36s ease both' }}>
+                <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">수사 시간</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-[11px] text-gray-500 mb-1">시작 시각</p>
+                  <FloatField label="시작">
                     <select
-                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/60 text-white rounded-xl px-3 py-2.5 text-sm outline-none transition-all"
+                      className="cin-input"
                       value={gameStartHour}
                       onChange={(e) => setGameStartHour(Number(e.target.value))}
                     >
                       {Array.from({ length: 24 }, (_, i) => (
-                        <option key={i} value={i} className="bg-[#0c0e14]">{formatHour(i)}</option>
+                        <option key={i} value={i} className="bg-[#06080d]">{formatHour(i)}</option>
                       ))}
                     </select>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-gray-500 mb-1">종료 시각</p>
+                  </FloatField>
+                  <FloatField label="종료">
                     <select
-                      className="w-full bg-white/5 border border-white/10 hover:border-white/20 focus:border-teal-500/60 text-white rounded-xl px-3 py-2.5 text-sm outline-none transition-all"
+                      className="cin-input"
                       value={gameEndHour}
                       onChange={(e) => setGameEndHour(Number(e.target.value))}
                     >
-                      {Array.from({ length: 24 }, (_, i) => i + 1).filter(h => h > gameStartHour).map(h => (
-                        <option key={h} value={h} className="bg-[#0c0e14]">{formatHour(h)}</option>
-                      ))}
+                      {Array.from({ length: 24 }, (_, i) => i + 1)
+                        .filter((h) => h > gameStartHour)
+                        .map((h) => (
+                          <option key={h} value={h} className="bg-[#06080d]">{formatHour(h)}</option>
+                        ))}
                     </select>
-                  </div>
+                  </FloatField>
                 </div>
-                <p className="text-[11px] text-gray-500">
-                  총 {totalHours}시간 ({totalHours * 60}분) · 행동당 15분 소모 · 최대 {Math.floor(totalHours * 60 / 15)}회 행동 가능
+                <p className="text-[11px] text-white/[0.22] mt-2 pl-0.5">
+                  행동 1회당 15분 소모 · 최대 {Math.floor(((gameEndHour - gameStartHour) * 60) / 15)}회 행동 가능
                 </p>
               </div>
 
-              {/* 생성 버튼 */}
-              <button
-                className={`w-full py-3.5 rounded-xl font-bold text-base transition-all
-                  ${loading
-                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-teal-500 to-violet-500 text-white hover:opacity-90 shadow-[0_0_24px_rgba(20,184,166,0.35)] hover:shadow-[0_0_32px_rgba(20,184,166,0.5)]'
-                  }`}
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-gray-400/40 border-t-gray-300 rounded-full animate-spin" />
-                    AI가 사건을 생성하는 중...
-                  </span>
-                ) : (
-                  '🔮 AI 사건 생성하기'
-                )}
-              </button>
+              {/* 제출 버튼 */}
+              <div style={{ animation: 'rowIn 0.45s 0.42s ease both' }}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="relative w-full py-4 rounded-2xl border-none font-black text-white text-[15px] tracking-wide cursor-pointer overflow-hidden transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{
+                    background: loading ? 'rgba(255,255,255,0.1)' : '#ff4d6d',
+                    boxShadow: loading ? 'none' : '0 0 28px rgba(255,77,109,0.45)',
+                  }}
+                >
+                  <span
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1), transparent)' }}
+                  />
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      AI가 사건을 생성하는 중...
+                    </span>
+                  ) : (
+                    '사건 생성하기'
+                  )}
+                </button>
+              </div>
 
             </form>
           </div>
         </div>
       </div>
+
+      {/* 키프레임 인젝션 */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.94) translateY(16px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+        @keyframes orbIn {
+          to { opacity: 1; }
+        }
+        @keyframes rowIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .cin-input {
+          width: 100%;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.09);
+          border-radius: 13px;
+          padding: 14px 16px;
+          color: #fff;
+          font-family: 'Noto Sans KR', sans-serif;
+          font-size: 13px;
+          outline: none;
+          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+        }
+        .cin-input:focus {
+          border-color: rgba(255,77,109,0.45);
+          background: rgba(255,77,109,0.04);
+          box-shadow: 0 0 0 3px rgba(255,77,109,0.08);
+        }
+        .cin-input::placeholder { color: rgba(255,255,255,0.18); }
+        .cin-input option { background: #0c0f14; }
+      `}</style>
     </>
+  );
+}
+
+// ── Floating Label 래퍼 ───────────────────────────────────
+function FloatField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <span
+        className="absolute z-10 font-semibold"
+        style={{
+          top: -7, left: 14,
+          fontSize: 10,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.32)',
+          background: '#06080d',
+          padding: '0 5px',
+          pointerEvents: 'none',
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </div>
   );
 }
 

@@ -31,9 +31,9 @@ const DUMMY_TX: TxRecord[] = [
 ];
 
 // ── 보상형 광고 설정 ──────────────────────────────────────
-const AD_REWARD_COINS = 10;   // 광고 1회당 지급 코인
-const AD_DAILY_LIMIT  = 5;    // 하루 최대 시청 횟수
-const AD_COUNTDOWN    = 5;    // 광고 시청 카운트다운 (초)
+const AD_REWARD_COINS = 10;
+const AD_DAILY_LIMIT  = 5;
+const AD_COUNTDOWN    = 5;
 
 // ── 보상형 광고 모달 ──────────────────────────────────────
 function RewardedAdModal({
@@ -70,11 +70,9 @@ function RewardedAdModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
       <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#110d1e] shadow-2xl overflow-hidden">
 
-        {/* 광고 시청 중 */}
         {phase === 'watching' && (
           <>
             <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 flex flex-col items-center justify-center h-52 gap-3">
-              {/* 더미 광고 플레이스홀더 */}
               <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-accent-pink animate-spin" />
               <p className="text-sm text-gray-400 mt-1">광고 시청 중...</p>
               <div className="absolute top-3 right-4 bg-black/60 rounded-lg px-2.5 py-1 text-xs font-bold text-white tabular-nums">
@@ -96,7 +94,6 @@ function RewardedAdModal({
           </>
         )}
 
-        {/* 시청 완료 */}
         {phase === 'done' && (
           <div className="px-6 py-8 flex flex-col items-center gap-4 text-center">
             <div className="relative">
@@ -126,7 +123,7 @@ function RewardedAdModal({
 
 // ── 보상형 광고 섹션 ──────────────────────────────────────
 function RewardedAdSection() {
-  const [usedToday, setUsedToday] = useState(2);   // 더미: 오늘 2회 사용한 것처럼 초기화
+  const [usedToday, setUsedToday] = useState(2);
   const [showModal, setShowModal]   = useState(false);
   const [justEarned, setJustEarned] = useState(false);
 
@@ -149,7 +146,6 @@ function RewardedAdSection() {
       )}
 
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
-        {/* 섹션 헤더 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">📺</span>
@@ -172,7 +168,6 @@ function RewardedAdSection() {
           </div>
         </div>
 
-        {/* 일일 사용량 바 */}
         <div className="space-y-1.5">
           <div className="flex justify-between text-[11px]">
             <span className="text-gray-500">오늘 사용 현황</span>
@@ -194,7 +189,6 @@ function RewardedAdSection() {
           </div>
         </div>
 
-        {/* 적립 완료 토스트 */}
         {justEarned && (
           <div className="flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 px-3 py-2 text-sm text-emerald-300 font-semibold animate-pulse">
             <span>✓</span>
@@ -202,7 +196,6 @@ function RewardedAdSection() {
           </div>
         )}
 
-        {/* 버튼 */}
         {exhausted ? (
           <div className="rounded-xl bg-white/[0.03] border border-white/10 py-3 text-center text-sm text-gray-500">
             오늘 사용 가능 횟수를 모두 소진했습니다. 내일 다시 이용해주세요.
@@ -217,7 +210,6 @@ function RewardedAdSection() {
           </button>
         )}
 
-        {/* 안내 문구 */}
         <p className="text-[10px] text-gray-600 text-center leading-relaxed">
           정식 출시 시 제공 예정 · 광고 정책 준수 포맷만 적용 · 부정 이용 방지 시스템 적용
         </p>
@@ -260,7 +252,6 @@ function PackageCard({
         ${pkg.popular || pkg.best ? 'ring-1 ' + (selected ? 'ring-accent-pink/40' : 'ring-white/10') : ''}
       `}
     >
-      {/* 뱃지 */}
       {(pkg.popular || pkg.best) && (
         <div className={`absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full text-[11px] font-bold border
           ${pkg.best
@@ -309,7 +300,7 @@ export function CoinShopPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string>('lg');
-  const [payMethod, setPayMethod] = useState<'card' | 'kakao' | 'naver'>('card');
+  const [payMethod, setPayMethod] = useState<'card' | 'kakao'>('card');
   const [purchasing, setPurchasing] = useState(false);
   const [tab, setTab] = useState<'shop' | 'history'>('shop');
   const [successPkg, setSuccessPkg] = useState<CoinPackage | null>(null);
@@ -319,13 +310,11 @@ export function CoinShopPage() {
   async function handlePurchase() {
     if (purchasing) return;
     setPurchasing(true);
-    // TODO: 실제 결제 API 연동
     await new Promise((r) => setTimeout(r, 1200));
     setSuccessPkg(selectedPkg);
     setPurchasing(false);
   }
 
-  // 결제 성공 화면
   if (successPkg) {
     return (
       <div className="max-w-md mx-auto py-20 px-4 text-center space-y-6">
@@ -363,7 +352,6 @@ export function CoinShopPage() {
 
       {/* ── 상단 헤더 ── */}
       <div className="rounded-2xl overflow-hidden border border-white/10 relative">
-        {/* 배경 그라디언트 */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a14] via-[#12091c] to-[#0a1020] pointer-events-none" />
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent-pink/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
@@ -380,7 +368,6 @@ export function CoinShopPage() {
             <p className="text-sm text-red-400 mt-1">보상형 광고는 정책 준수 가능한 광고 포맷/네트워크에서만 제공되며, 부정 이용 방지 및 이용 제한이 적용됩니다.</p>
           </div>
 
-          {/* 현재 보유 코인 */}
           <div className="flex-shrink-0 text-right">
             <p className="text-[11px] uppercase tracking-wide text-gray-500">보유 코인</p>
             <div className="mt-1 flex items-center gap-1.5 justify-end">
@@ -394,7 +381,7 @@ export function CoinShopPage() {
       </div>
 
       {/* ── 탭 ── */}
-      <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/8">
+      <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/[0.08]">
         {(['shop', 'history'] as const).map((t) => (
           <button
             key={t}
@@ -413,13 +400,12 @@ export function CoinShopPage() {
       {tab === 'shop' ? (
         <>
           {/* ── 코인 사용처 안내 ── */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { icon: '🤖', label: 'AI 사건 생성', cost: '20C' },
-              { icon: '🔮', label: '힌트 사용', cost: '5C' },
-              { icon: '⭐', label: '프리미엄 사건', cost: '10C' },
+              { icon: '⭐', label: '기본 사건 플레이', cost: '10C' },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl bg-white/[0.03] border border-white/8 p-3 text-center">
+              <div key={item.label} className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-3 text-center">
                 <span className="text-2xl">{item.icon}</span>
                 <p className="text-[11px] text-gray-400 mt-1.5 leading-tight">{item.label}</p>
                 <p className="text-xs text-accent-pink font-bold mt-1">{item.cost}</p>
@@ -448,23 +434,21 @@ export function CoinShopPage() {
           {/* ── 결제 수단 ── */}
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">결제 수단</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {([
-                { id: 'card',  label: '신용카드',  icon: '💳' },
-                { id: 'kakao', label: '카카오페이', icon: '🟡' },
-                { id: 'naver', label: '네이버페이', icon: '🟢' },
+                { id: 'card',  label: '신용카드' },
+                { id: 'kakao', label: '카카오페이' },
               ] as const).map((method) => (
                 <button
                   key={method.id}
                   onClick={() => setPayMethod(method.id)}
-                  className={`py-3 rounded-xl border text-sm font-semibold transition-all flex flex-col items-center gap-1
+                  className={`py-3 rounded-xl border text-sm font-semibold transition-all
                     ${payMethod === method.id
                       ? 'bg-white/10 border-white/30 text-white'
                       : 'bg-white/[0.03] border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
                     }`}
                 >
-                  <span className="text-xl">{method.icon}</span>
-                  <span className="text-[11px]">{method.label}</span>
+                  {method.label}
                 </button>
               ))}
             </div>
@@ -527,7 +511,7 @@ export function CoinShopPage() {
             DUMMY_TX.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/8 px-4 py-3"
+                className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/15 px-4 py-3"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
