@@ -23,7 +23,6 @@ function UserDropdown({
 }) {
   return (
     <div className="relative group">
-      {/* 헤더 트리거: 프로필 이미지 */}
       <button className="flex items-center gap-1.5 px-1.5 py-1 rounded-full hover:bg-dark-surface transition-colors">
         <img
           src={profileImageUrl}
@@ -42,10 +41,8 @@ function UserDropdown({
           transition-all duration-200
         "
       >
-        {/* hover gap 방지 브릿지 */}
         <div className="absolute -top-1 left-0 right-0 h-2" />
 
-        {/* 유저 정보 헤더 */}
         <div className="px-4 py-3 border-b border-dark-border">
           <div className="flex items-center gap-2.5">
             <img
@@ -58,7 +55,6 @@ function UserDropdown({
               <p className="text-xs text-gray-500">보유 코인</p>
             </div>
           </div>
-          {/* 코인 표시 + 구매 링크 */}
           <Link
             to="/coins"
             className="mt-2 flex items-center justify-between group/coin rounded-lg bg-accent-pink/10 border border-accent-pink/20 px-3 py-2 hover:bg-accent-pink/20 transition-colors"
@@ -129,25 +125,16 @@ function AppFooter() {
         <div className="my-5 h-px bg-white/[0.05]" />
 
         {/* Bottom row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <p className="text-[11px] text-gray-600 leading-relaxed">
-            © {year} Open Clue. All rights reserved.
-            <span className="mx-2 text-white/10">·</span>
-            현재 코인 충전 기능은 정식 출시 전 준비 중입니다.
-          </p>
-
-          {/* Status badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] text-gray-500 font-medium tracking-wide uppercase">서비스 운영 중</span>
-          </div>
-        </div>
+        <p className="text-[11px] text-gray-600 leading-relaxed">
+          © {year} Open Clue. All rights reserved.
+          <span className="mx-2 text-white/10">·</span>
+          현재 코인 충전 기능은 정식 출시 전 준비 중입니다.
+        </p>
       </div>
     </footer>
   );
 }
 
-// PlayPage는 전체화면 레이아웃이라 footer 불필요
 const NO_FOOTER_PATHS = ['/play/'];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -163,12 +150,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 bg-dark-bg/95 backdrop-blur border-b border-dark-border">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
-          {/* 로고 */}
+          {/* 로고 + 네비게이션 */}
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-2 shrink-0">
               <img src="/logo.png" alt="Open Clue" className="h-7 w-7 object-contain" />
               <span className="font-bold text-lg text-white tracking-tight">Open Clue</span>
             </Link>
+            <nav className="hidden sm:flex items-center gap-1">
+              <Link
+                to="/cases"
+                className="px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                사건 목록
+              </Link>
+            </nav>
           </div>
 
           {/* 우측 유저 영역 */}

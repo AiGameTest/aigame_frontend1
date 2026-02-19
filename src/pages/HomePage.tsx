@@ -30,7 +30,7 @@ function formatHour(h: number): string {
   return `${period} ${display === 0 ? 12 : display}시`;
 }
 
-// ── AI 모드 모달 (Cinematic) ───────────────────────────────
+// ── AI 모드 모달 ───────────────────────────────────────────
 function AiModeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const start = useSessionStore((s) => s.start);
@@ -86,7 +86,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           className="relative w-full max-w-[520px] rounded-3xl overflow-hidden border border-white/[0.08] shadow-[0_32px_80px_rgba(0,0,0,0.75),0_0_0_1px_rgba(255,255,255,0.04)] pointer-events-auto"
-          style={{ animation: 'modalIn 0.35s cubic-bezier(0.22,1,0.36,1) both' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* ── 배경 레이어 ── */}
@@ -99,8 +98,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 top: -80, left: -80,
                 background: 'radial-gradient(circle, rgba(255,77,109,0.45), transparent 65%)',
                 filter: 'blur(55px)',
-                animation: 'orbIn 0.8s 0.1s ease forwards',
-                opacity: 0,
               }}
             />
             {/* orb 2 — teal */}
@@ -111,8 +108,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 bottom: -60, right: -40,
                 background: 'radial-gradient(circle, rgba(20,184,166,0.3), transparent 65%)',
                 filter: 'blur(55px)',
-                animation: 'orbIn 0.8s 0.2s ease forwards',
-                opacity: 0,
               }}
             />
             {/* orb 3 — indigo */}
@@ -123,8 +118,6 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 top: '40%', left: '55%',
                 background: 'radial-gradient(circle, rgba(99,102,241,0.22), transparent 65%)',
                 filter: 'blur(55px)',
-                animation: 'orbIn 0.8s 0.3s ease forwards',
-                opacity: 0,
               }}
             />
           </div>
@@ -141,7 +134,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
           <div className="relative z-[1] px-8 pt-8 pb-7">
 
             {/* 헤더 */}
-            <div className="mb-6" style={{ animation: 'rowIn 0.5s 0.1s ease both' }}>
+            <div className="mb-6">
               <p className="text-[10px] tracking-[0.28em] uppercase font-bold mb-2.5" style={{ color: 'rgba(255,77,109,0.75)' }}>
                 AI Murder Mystery Generator
               </p>
@@ -157,37 +150,33 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
             </div>
 
             {/* 구분선 */}
-            <div className="h-px bg-white/[0.06] -mx-8 mb-6" style={{ animation: 'rowIn 0.5s 0.15s ease both' }} />
+            <div className="h-px bg-white/[0.06] -mx-8 mb-6" />
 
             {/* 폼 */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
               {/* 장소 */}
-              <div style={{ animation: 'rowIn 0.45s 0.18s ease both' }}>
-                <FloatField label="장소 / 배경">
-                  <input
-                    className="cin-input"
-                    value={setting}
-                    onChange={(e) => setSetting(e.target.value)}
-                    placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
-                  />
-                </FloatField>
-              </div>
+              <FloatField label="장소 / 배경">
+                <input
+                  className="cin-input"
+                  value={setting}
+                  onChange={(e) => setSetting(e.target.value)}
+                  placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
+                />
+              </FloatField>
 
               {/* 피해자 */}
-              <div style={{ animation: 'rowIn 0.45s 0.24s ease both' }}>
-                <FloatField label="피해자 설정">
-                  <input
-                    className="cin-input"
-                    value={victimProfile}
-                    onChange={(e) => setVictimProfile(e.target.value)}
-                    placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
-                  />
-                </FloatField>
-              </div>
+              <FloatField label="피해자 설정">
+                <input
+                  className="cin-input"
+                  value={victimProfile}
+                  onChange={(e) => setVictimProfile(e.target.value)}
+                  placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
+                />
+              </FloatField>
 
               {/* 용의자 수 */}
-              <div style={{ animation: 'rowIn 0.45s 0.30s ease both' }}>
+              <div>
                 <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">용의자 수</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[3, 4, 5, 6].map((n) => (
@@ -208,7 +197,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
               </div>
 
               {/* 수사 시간 */}
-              <div style={{ animation: 'rowIn 0.45s 0.36s ease both' }}>
+              <div>
                 <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">수사 시간</p>
                 <div className="grid grid-cols-2 gap-3">
                   <FloatField label="시작">
@@ -242,50 +231,36 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
               </div>
 
               {/* 제출 버튼 */}
-              <div style={{ animation: 'rowIn 0.45s 0.42s ease both' }}>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="relative w-full py-4 rounded-2xl border-none font-black text-white text-[15px] tracking-wide cursor-pointer overflow-hidden transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{
-                    background: loading ? 'rgba(255,255,255,0.1)' : '#ff4d6d',
-                    boxShadow: loading ? 'none' : '0 0 28px rgba(255,77,109,0.45)',
-                  }}
-                >
-                  <span
-                    className="absolute inset-0 pointer-events-none"
-                    style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1), transparent)' }}
-                  />
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      AI가 사건을 생성하는 중...
-                    </span>
-                  ) : (
-                    '사건 생성하기'
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="relative w-full py-4 rounded-2xl border-none font-black text-white text-[15px] tracking-wide cursor-pointer overflow-hidden transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  background: loading ? 'rgba(255,255,255,0.1)' : '#ff4d6d',
+                  boxShadow: loading ? 'none' : '0 0 28px rgba(255,77,109,0.45)',
+                }}
+              >
+                <span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1), transparent)' }}
+                />
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    AI가 사건을 생성하는 중...
+                  </span>
+                ) : (
+                  '사건 생성하기'
+                )}
+              </button>
 
             </form>
           </div>
         </div>
       </div>
 
-      {/* 키프레임 인젝션 */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.94) translateY(16px); }
-          to   { opacity: 1; transform: scale(1)    translateY(0); }
-        }
-        @keyframes orbIn {
-          to { opacity: 1; }
-        }
-        @keyframes rowIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
         .cin-input {
           width: 100%;
           background: rgba(255,255,255,0.04);
