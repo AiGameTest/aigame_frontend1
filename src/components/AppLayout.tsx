@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 function CoinIcon({ className = '' }: { className?: string }) {
@@ -96,13 +96,70 @@ function UserDropdown({
   );
 }
 
+function AppFooter() {
+  const year = new Date().getFullYear();
+
+  return (
+    <footer className="mt-auto border-t border-white/[0.06] bg-[#090909]">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Top row */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Open Clue" className="h-6 w-6 object-contain opacity-80" />
+            <div>
+              <span className="font-bold text-white tracking-tight">Open Clue</span>
+              <p className="text-[11px] text-gray-600 mt-0.5 leading-none">AI Murder Mystery</p>
+            </div>
+          </div>
+
+          {/* Links */}
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
+            <Link to="/cases?tab=basic" className="hover:text-gray-300 transition-colors">사건 목록</Link>
+            <Link to="/create" className="hover:text-gray-300 transition-colors">사건 만들기</Link>
+            <Link to="/coins" className="hover:text-gray-300 transition-colors">코인 충전</Link>
+            <span className="text-white/10">|</span>
+            <a href="#" className="hover:text-gray-300 transition-colors">이용약관</a>
+            <a href="#" className="hover:text-gray-300 transition-colors">개인정보처리방침</a>
+          </nav>
+        </div>
+
+        {/* Divider */}
+        <div className="my-5 h-px bg-white/[0.05]" />
+
+        {/* Bottom row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <p className="text-[11px] text-gray-600 leading-relaxed">
+            © {year} Open Clue. All rights reserved.
+            <span className="mx-2 text-white/10">·</span>
+            현재 코인 충전 기능은 정식 출시 전 준비 중입니다.
+          </p>
+
+          {/* Status badge */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] text-gray-500 font-medium tracking-wide uppercase">서비스 운영 중</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// PlayPage는 전체화면 레이아웃이라 footer 불필요
+const NO_FOOTER_PATHS = ['/play/'];
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const doLogout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const hideFooter = NO_FOOTER_PATHS.some((p) => location.pathname.startsWith(p));
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen bg-dark-bg flex flex-col">
       <header className="sticky top-0 z-50 bg-dark-bg/95 backdrop-blur border-b border-dark-border">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
@@ -136,7 +193,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">{children}</main>
+
+      {!hideFooter && <AppFooter />}
     </div>
   );
 }
