@@ -15,6 +15,8 @@ import { CoinShopPage } from './pages/CoinShopPage';
 import { AdminPage } from './pages/AdminPage';
 import { AdminCaseEditPage } from './pages/AdminCaseEditPage';
 import { CaseBrowsePage } from './pages/CaseBrowsePage';
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 
 export default function App() {
   const bootstrap = useAuthStore((s) => s.bootstrap);
@@ -37,6 +39,8 @@ export default function App() {
         <Route path="/coins" element={<ProtectedRoute><CoinShopPage /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
         <Route path="/admin/edit/:type/:id" element={<AdminRoute><AdminCaseEditPage /></AdminRoute>} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppLayout>

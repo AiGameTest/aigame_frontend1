@@ -116,8 +116,8 @@ function AppFooter() {
             <Link to="/create" className="hover:text-gray-300 transition-colors">사건 만들기</Link>
             <Link to="/coins" className="hover:text-gray-300 transition-colors">코인 충전</Link>
             <span className="text-white/10">|</span>
-            <a href="#" className="hover:text-gray-300 transition-colors">이용약관</a>
-            <a href="#" className="hover:text-gray-300 transition-colors">개인정보처리방침</a>
+            <Link to="/terms" className="hover:text-gray-300 transition-colors">이용약관</Link>
+            <Link to="/privacy" className="hover:text-gray-300 transition-colors">개인정보처리방침</Link>
           </nav>
         </div>
 
