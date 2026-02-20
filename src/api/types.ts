@@ -21,6 +21,7 @@ export interface AuthTokenResponse {
   refreshToken: string;
   tokenType: string;
   expiresIn: number;
+  refreshExpiresIn: number;
   user: UserMeResponse;
 }
 

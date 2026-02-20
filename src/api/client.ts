@@ -39,20 +39,25 @@ export function setAuthFailureHandler(handler: () => void) {
   onAuthFailed = handler;
 }
 
+const REFRESH_URL = '/auth/refresh';
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status === 401 && !original?._retry) {
+    const isRefreshRequest = original?.url?.includes(REFRESH_URL);
+
+    if (error.response?.status === 401 && !original?._retry && !isRefreshRequest) {
       original._retry = true;
       try {
         await refresh();
         return api(original);
-      } catch {
+      } catch (refreshError) {
         onAuthFailed?.();
+        return Promise.reject(refreshError);
       }
     }
-    throw error;
+    return Promise.reject(error);
   }
 );
 
