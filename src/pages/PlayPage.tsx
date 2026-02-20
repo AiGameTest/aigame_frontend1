@@ -20,8 +20,16 @@ interface SuspectProfile {
 
 interface StoryData {
   title?: string;
+  openingNarration?: string;
   suspects?: SuspectProfile[];
   evidence?: { title: string; detail: string; linkedTo: string; location: string }[];
+}
+
+interface SuspectChatItem {
+  id: number;
+  role: 'PLAYER' | 'SUSPECT';
+  content: string;
+  createdAt: string;
 }
 
 function parseStory(storyJson: string): StoryData {
@@ -90,6 +98,32 @@ function statusLabel(status: string): string {
   return '종료';
 }
 
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function extractSuspectNameFromPlayerMessage(content: string, suspectNames: string[]): string | null {
+  for (const name of suspectNames) {
+    if (content.startsWith(`[${name}`)) {
+      return name;
+    }
+  }
+  return null;
+}
+
+function stripPlayerPrefix(content: string): string {
+  const match = content.match(/^\[[^\]]+\]\s*/);
+  if (!match) return content;
+  return content.substring(match[0].length);
+}
+
 export function PlayPage() {
   const { sessionId: sessionPublicId } = useParams();
   const navigate = useNavigate();
@@ -105,6 +139,7 @@ export function PlayPage() {
   const [selectedSuspect, setSelectedSuspect] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
+  const [chatLogSuspect, setChatLogSuspect] = useState<string | null>(null);
   const [accuseOpen, setAccuseOpen] = useState(false);
   const [foundEvidence, setFoundEvidence] = useState<EvidenceItem[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -162,25 +197,46 @@ export function PlayPage() {
 
   const selectedProfile = useMemo(() => (story.suspects ?? []).find((s) => s.name === selectedSuspect), [story, selectedSuspect]);
 
-  const recentEvents = useMemo(() => {
-    if (!current) return [] as { id: string; label: string; detail: string }[];
-    const entries = current.messages
-      .filter((m) => m.role !== 'SYSTEM')
-      .slice(-5)
-      .map((m) => ({
-        id: `msg-${m.id}`,
-        label: m.role === 'PLAYER' ? '플레이어 질문' : '용의자 답변',
-        detail: m.content,
-      }));
+  const suspectChatMap = useMemo(() => {
+    const map = new Map<string, SuspectChatItem[]>();
+    if (!current) return map;
 
-    const evidenceEntries = current.evidence.slice(-2).map((e) => ({
-      id: `ev-${e.id}`,
-      label: '증거 확보',
-      detail: `${e.title}: ${e.detail}`,
-    }));
+    let pendingSuspect: string | null = null;
 
-    return [...entries, ...evidenceEntries].slice(-6).reverse();
-  }, [current]);
+    for (const msg of current.messages) {
+      if (msg.role === 'SYSTEM') continue;
+
+      if (msg.role === 'PLAYER') {
+        const suspectName = extractSuspectNameFromPlayerMessage(msg.content, suspectNames);
+        if (suspectName) {
+          if (!map.has(suspectName)) map.set(suspectName, []);
+          map.get(suspectName)!.push({
+            id: msg.id,
+            role: 'PLAYER',
+            content: msg.content,
+            createdAt: msg.createdAt,
+          });
+          pendingSuspect = suspectName;
+        } else {
+          pendingSuspect = null;
+        }
+        continue;
+      }
+
+      if (msg.role === 'SUSPECT' && pendingSuspect) {
+        if (!map.has(pendingSuspect)) map.set(pendingSuspect, []);
+        map.get(pendingSuspect)!.push({
+          id: msg.id,
+          role: 'SUSPECT',
+          content: msg.content,
+          createdAt: msg.createdAt,
+        });
+      }
+      pendingSuspect = null;
+    }
+
+    return map;
+  }, [current, suspectNames]);
 
   async function handleMove(location: string) {
     if (!sessionPublicId) return;
@@ -241,6 +297,7 @@ export function PlayPage() {
   }
 
   const caseTitle = story.title ?? `Case #${current.id}`;
+  const openingNarration = current.openingNarration ?? story.openingNarration ?? '';
 
   const suspectHasLeft =
     viewMode === 'conversation' &&
@@ -300,6 +357,15 @@ export function PlayPage() {
         <main className="flex-1 overflow-y-auto px-4 md:px-6 py-4 pb-24">
           <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-4">
             <section className="space-y-4">
+              {openingNarration && (
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <h2 className="text-sm font-semibold text-gray-100">사건 개요</h2>
+                  <p className="mt-2 text-sm text-gray-200 leading-relaxed whitespace-pre-line">
+                    {openingNarration}
+                  </p>
+                </div>
+              )}
+
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-gray-100">장소</h2>
@@ -388,21 +454,61 @@ export function PlayPage() {
 
             <aside className="space-y-4">
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <h3 className="text-sm font-semibold text-white">수사 로그</h3>
+                <h3 className="text-sm font-semibold text-white">증거 수첩</h3>
                 <div className="mt-3 space-y-2 max-h-[330px] overflow-auto pr-1">
-                  {recentEvents.length === 0 ? (
-                    <p className="text-xs text-gray-500">아직 기록이 없습니다.</p>
+                  {current.evidence.length === 0 ? (
+                    <p className="text-xs text-gray-500">아직 발견한 증거가 없습니다.</p>
                   ) : (
-                    recentEvents.map((item) => (
+                    current.evidence.map((item) => (
                       <div key={item.id} className="rounded-lg border border-white/10 bg-black/30 p-2.5">
-                        <p className="text-[11px] uppercase tracking-wide text-gray-300">{item.label}</p>
-                        <p className="mt-1 text-xs text-gray-300 line-clamp-3">{item.detail}</p>
+                        <p className="text-xs font-semibold text-gray-200">{item.title}</p>
+                        <p className="mt-1 text-xs text-gray-300 line-clamp-4">{item.detail}</p>
+                        <p className="mt-1 text-[11px] text-gray-500">{formatDateTime(item.discoveredAt)}</p>
                       </div>
                     ))
                   )}
                 </div>
                 <p className="mt-3 text-[11px] text-gray-500">
-                  최근 질문, 답변, 단서 확보 기록을 시간 순으로 보여줍니다.
+                  수집한 증거는 수사 종료 전까지 모두 보관됩니다.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <h3 className="text-sm font-semibold text-white">심문 기록</h3>
+                <div className="mt-3 space-y-2 max-h-[260px] overflow-auto pr-1">
+                  {suspectNames.length === 0 ? (
+                    <p className="text-xs text-gray-500">용의자 정보가 없습니다.</p>
+                  ) : (
+                    suspectNames.map((name) => {
+                      const logs = suspectChatMap.get(name) ?? [];
+                      const questionCount = logs.filter((l) => l.role === 'PLAYER').length;
+                      const lastAt = logs.length > 0 ? logs[logs.length - 1].createdAt : null;
+                      return (
+                        <div key={name} className="rounded-lg border border-white/10 bg-black/30 p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-gray-200 truncate">{name}</p>
+                              <p className="text-[11px] text-gray-500">
+                                대화 {questionCount}회
+                                {lastAt ? ` · 최근 ${formatDateTime(lastAt)}` : ''}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setChatLogSuspect(name)}
+                              disabled={logs.length === 0}
+                              className="px-2 py-1 rounded-md border border-white/15 text-[11px] text-gray-300 hover:text-white hover:border-white/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              보기
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <p className="mt-3 text-[11px] text-gray-500">
+                  용의자별 심문 기록을 모아서 확인할 수 있습니다.
                 </p>
               </div>
             </aside>
@@ -441,6 +547,54 @@ export function PlayPage() {
         suspects={suspectNames}
         onSubmit={submitAccuse}
       />
+
+      {chatLogSuspect && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setChatLogSuspect(null)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl border border-white/15 bg-[#0f1218] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <h3 className="text-sm font-semibold text-white">{chatLogSuspect} 심문 기록</h3>
+              <button
+                type="button"
+                onClick={() => setChatLogSuspect(null)}
+                className="px-2 py-1 rounded-md border border-white/15 text-xs text-gray-300 hover:text-white hover:border-white/30"
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto px-4 py-3 space-y-2">
+              {(suspectChatMap.get(chatLogSuspect) ?? []).length === 0 ? (
+                <p className="text-xs text-gray-500">아직 기록이 없습니다.</p>
+              ) : (
+                (suspectChatMap.get(chatLogSuspect) ?? []).map((item) => (
+                  <div
+                    key={item.id}
+                    className={`rounded-lg border p-2.5 ${
+                      item.role === 'PLAYER'
+                        ? 'border-cyan-800/50 bg-cyan-950/20'
+                        : 'border-white/10 bg-black/30'
+                    }`}
+                  >
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">
+                      {item.role === 'PLAYER' ? '질문' : '답변'}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-200 whitespace-pre-wrap">
+                      {item.role === 'PLAYER' ? stripPlayerPrefix(item.content) : item.content}
+                    </p>
+                    <p className="mt-1 text-[11px] text-gray-500">{formatDateTime(item.createdAt)}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

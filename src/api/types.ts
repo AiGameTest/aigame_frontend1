@@ -175,6 +175,7 @@ export interface GameSessionResponse {
   sourceRefId: number | null;
   status: SessionStatus;
   generatedStoryJson: string;
+  openingNarration?: string;
   messages: MessageLogItem[];
   evidence: EvidenceItem[];
   currentLocation: string | null;
