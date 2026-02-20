@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { listCases, listPublishedUserCases } from '../api/client';
-import type { CaseTemplateSummary, UserCaseDraftResponse } from '../api/types';
+import { listCasesPaged, listPublishedUserCasesPaged } from '../api/client';
+import type { CaseTemplateSummary, PagedResponse, UserCaseDraftResponse } from '../api/types';
 import { CaseDetailPanel } from '../components/CaseDetailPanel';
 import { CroppedThumbnail } from '../components/CroppedThumbnail';
 
@@ -126,28 +126,60 @@ function SkeletonGrid() {
 }
 
 export function CaseBrowsePage() {
+  const BASIC_PAGE_SIZE = 12;
+  const CUSTOM_PAGE_SIZE = 7;
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() =>
     searchParams.get('tab') === 'custom' ? 'custom' : 'basic'
   );
   const [sort, setSort] = useState<SortOrder>('popular');
-  const [basicCases, setBasicCases] = useState<CaseTemplateSummary[]>([]);
-  const [customCases, setCustomCases] = useState<UserCaseDraftResponse[]>([]);
+  const [page, setPage] = useState(0);
+  const [basicPageData, setBasicPageData] = useState<PagedResponse<CaseTemplateSummary> | null>(null);
+  const [customPageData, setCustomPageData] = useState<PagedResponse<UserCaseDraftResponse> | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
   const [selectedSource, setSelectedSource] = useState<'basic' | 'user'>('basic');
 
   useEffect(() => {
+    setPage(0);
+  }, [tab, sort]);
+
+  useEffect(() => {
     setLoading(true);
-    Promise.all([
-      listCases().catch(() => [] as CaseTemplateSummary[]),
-      listPublishedUserCases().catch(() => [] as UserCaseDraftResponse[]),
-    ]).then(([basic, custom]) => {
-      setBasicCases(basic);
-      setCustomCases(custom);
-      setLoading(false);
-    });
-  }, []);
+    const sortParam = sort === 'popular' ? 'recommended' : undefined;
+    const currentPageSize = tab === 'basic' ? BASIC_PAGE_SIZE : CUSTOM_PAGE_SIZE;
+
+    if (tab === 'basic') {
+      void listCasesPaged({ sort: sortParam, page, size: currentPageSize })
+        .then((data) => setBasicPageData(data))
+        .catch(() =>
+          setBasicPageData({
+            content: [],
+            page: 0,
+            size: currentPageSize,
+            totalElements: 0,
+            totalPages: 0,
+            last: true,
+          })
+        )
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    void listPublishedUserCasesPaged({ sort: sortParam, page, size: currentPageSize })
+      .then((data) => setCustomPageData(data))
+      .catch(() =>
+        setCustomPageData({
+          content: [],
+          page: 0,
+          size: currentPageSize,
+          totalElements: 0,
+          totalPages: 0,
+          last: true,
+        })
+      )
+      .finally(() => setLoading(false));
+  }, [tab, sort, page]);
 
   useEffect(() => {
     setSearchParams({ tab }, { replace: true });
@@ -156,17 +188,8 @@ export function CaseBrowsePage() {
   function switchTab(t: Tab) {
     setTab(t);
     setSort('popular');
+    setPage(0);
   }
-
-  const sortedBasic = [...basicCases].sort((a, b) =>
-    sort === 'popular' ? b.recommendCount - a.recommendCount : b.id - a.id
-  );
-
-  const sortedCustom = [...customCases].sort((a, b) =>
-    sort === 'popular'
-      ? b.recommendCount - a.recommendCount
-      : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
 
   function openBasicCase(id: number) {
     setSelectedSource('basic');
@@ -178,7 +201,11 @@ export function CaseBrowsePage() {
     setSelectedCaseId(id);
   }
 
-  const count = loading ? null : tab === 'basic' ? sortedBasic.length : sortedCustom.length;
+  const currentPageData = tab === 'basic' ? basicPageData : customPageData;
+  const count = loading ? null : (currentPageData?.totalElements ?? 0);
+  const totalPages = currentPageData?.totalPages ?? 0;
+  const basicCases = basicPageData?.content ?? [];
+  const customCases = customPageData?.content ?? [];
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
@@ -192,16 +219,18 @@ export function CaseBrowsePage() {
       {/* 탭 + 정렬 */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         {/* 탭 */}
-        <div className="flex gap-1 bg-white/[0.04] rounded-xl p-1 border border-white/8">
+        <div className="flex border-b border-white/10">
           {(['basic', 'custom'] as const).map((t) => (
             <button
               key={t}
               onClick={() => switchTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                tab === t ? 'bg-white/10 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'
+              className={`px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-all ${
+                tab === t
+                  ? 'border-accent-pink text-white'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}
             >
-              {t === 'basic' ? '🔎 기본 사건' : '✏️ 커스텀 사건'}
+              {t === 'basic' ? '기본 사건' : '커스텀 사건'}
             </button>
           ))}
         </div>
@@ -215,14 +244,17 @@ export function CaseBrowsePage() {
             {(['popular', 'recent'] as const).map((s) => (
               <button
                 key={s}
-                onClick={() => setSort(s)}
+                onClick={() => {
+                  setSort(s);
+                  setPage(0);
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
                   sort === s
                     ? 'bg-accent-pink/15 border-accent-pink/40 text-accent-pink'
                     : 'bg-white/[0.03] border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
                 }`}
               >
-                {s === 'popular' ? '🔥 인기순' : '🕐 최신순'}
+                {s === 'popular' ? '인기순' : '최신순'}
               </button>
             ))}
           </div>
@@ -233,11 +265,11 @@ export function CaseBrowsePage() {
       {loading ? (
         <SkeletonGrid />
       ) : tab === 'basic' ? (
-        sortedBasic.length === 0 ? (
+        basicCases.length === 0 ? (
           <div className="text-center py-20 text-gray-500 text-sm">기본 사건이 없습니다.</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6">
-            {sortedBasic.map((c) => (
+            {basicCases.map((c) => (
               <BasicCaseGridCard key={c.id} c={c} onClick={openBasicCase} />
             ))}
           </div>
@@ -256,15 +288,37 @@ export function CaseBrowsePage() {
             <p className="text-xs text-gray-600 mt-0.5">나만의 사건을 설계하고 게시하세요</p>
           </Link>
 
-          {sortedCustom.map((c) => (
+          {customCases.map((c) => (
             <CustomCaseGridCard key={c.id} c={c} onClick={openUserCase} />
           ))}
 
-          {sortedCustom.length === 0 && (
+          {customCases.length === 0 && (
             <p className="col-span-full text-center py-12 text-gray-600 text-sm">
               아직 게시된 커스텀 사건이 없습니다.
             </p>
           )}
+        </div>
+      )}
+
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 0))}
+            disabled={page === 0}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/10 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            이전
+          </button>
+          <span className="text-xs text-gray-400">
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
+            disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/10 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            다음
+          </button>
         </div>
       )}
 

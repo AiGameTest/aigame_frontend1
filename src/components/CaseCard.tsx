@@ -31,7 +31,7 @@ export function CaseCard({ c, onClick }: CaseCardProps) {
 
   return (
     <div className="block group cursor-pointer" onClick={() => onClick(c.id)}>
-      <div className="w-[220px] md:w-[260px]">
+      <div className="w-full">
         {/* 썸네일 */}
         <div
           className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} mb-2`}

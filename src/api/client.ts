@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+﻿import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type {
   AccuseRequest,
   AccuseResponse,
@@ -18,6 +18,7 @@ import type {
   InvestigateResponse,
   MoveRequest,
   MoveResponse,
+  PagedResponse,
   SessionSummaryResponse,
   StartSessionRequest,
   UpdateNicknameRequest,
@@ -134,6 +135,17 @@ export async function listCases(sort?: 'recommended'): Promise<CaseTemplateSumma
   return data;
 }
 
+export async function listCasesPaged(params?: {
+  sort?: 'recommended';
+  page?: number;
+  size?: number;
+}): Promise<PagedResponse<CaseTemplateSummary>> {
+  const { data } = await api.get<PagedResponse<CaseTemplateSummary>>('/cases/paged', {
+    params,
+  });
+  return data;
+}
+
 export async function getCase(caseId: number): Promise<CaseTemplateDetail> {
   const { data } = await api.get<CaseTemplateDetail>(`/cases/${caseId}`);
   return data;
@@ -167,6 +179,17 @@ export async function listMyCases(): Promise<UserCaseDraftResponse[]> {
 export async function listPublishedUserCases(sort?: 'recommended'): Promise<UserCaseDraftResponse[]> {
   const { data } = await api.get<UserCaseDraftResponse[]>('/user-cases/published', {
     params: sort ? { sort } : undefined,
+  });
+  return data;
+}
+
+export async function listPublishedUserCasesPaged(params?: {
+  sort?: 'recommended';
+  page?: number;
+  size?: number;
+}): Promise<PagedResponse<UserCaseDraftResponse>> {
+  const { data } = await api.get<PagedResponse<UserCaseDraftResponse>>('/user-cases/published/paged', {
+    params,
   });
   return data;
 }

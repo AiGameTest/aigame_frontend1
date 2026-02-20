@@ -86,6 +86,15 @@ export interface CaseTemplateSummary {
   recommendCount: number;
 }
 
+export interface PagedResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 export interface CaseSuspectInfo {
   name: string;
   personality?: string;

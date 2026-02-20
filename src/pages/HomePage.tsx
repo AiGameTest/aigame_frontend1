@@ -1,6 +1,6 @@
-﻿import { FormEvent, useEffect, useRef, useState } from 'react';
+﻿import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { listCases, listPublishedUserCases } from '../api/client';
+import { listCasesPaged, listPublishedUserCasesPaged } from '../api/client';
 import type { CaseTemplateSummary, UserCaseDraftResponse } from '../api/types';
 import { CaseCard } from '../components/CaseCard';
 import { CaseDetailPanel } from '../components/CaseDetailPanel';
@@ -12,17 +12,17 @@ const BANNERS = [
   {
     title: 'AI 추리 게임',
     subtitle: '용의자를 심문하고 진실을 찾아보세요.',
-    gradient: 'from-slate-900 via-zinc-900 to-gray-900',
+    gradient: 'from-indigo-600 via-purple-500 to-pink-400',
   },
   {
     title: 'BASIC 모드',
     subtitle: '준비된 사건으로 바로 플레이할 수 있습니다.',
-    gradient: 'from-slate-900 via-blue-900/60 to-zinc-900',
+    gradient: 'from-sky-400 via-blue-500 to-violet-500',
   },
   {
     title: 'AI 모드',
     subtitle: 'AI가 매번 새로운 사건을 생성합니다.',
-    gradient: 'from-zinc-900 via-teal-900/60 to-slate-900',
+    gradient: 'from-green-400 via-emerald-500 to-sky-500',
   },
 ];
 
@@ -314,14 +314,21 @@ function ScrollSectionPlain({
   accent,
   linkText = '더보기',
   to,
+  layout = 'scroll',
   children,
 }: {
   title: string;
   accent?: string;
   linkText?: string;
   to?: string;
+  layout?: 'scroll' | 'grid';
   children: React.ReactNode;
 }) {
+  const containerClassName =
+    layout === 'grid'
+      ? 'grid grid-cols-2 md:grid-cols-4 gap-4'
+      : 'scroll-row';
+
   return (
     <section className="mb-10">
       <div className="section-header">
@@ -334,7 +341,7 @@ function ScrollSectionPlain({
           <span className="section-link text-gray-600 cursor-default">{linkText}</span>
         )}
       </div>
-      <div className="scroll-row">
+      <div className={containerClassName}>
         {children}
       </div>
     </section>
@@ -391,7 +398,7 @@ function CommunityCaseCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: 
 
   return (
     <div className="block group cursor-pointer" onClick={() => onClick(c.id)}>
-      <div className="w-[220px] md:w-[260px]">
+      <div className="w-full">
         <div className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${colors[colorIdx]} mb-2`}>
           {c.thumbnailUrl ? (
             hasCrop ? (
@@ -437,8 +444,17 @@ export function HomePage() {
   const [selectedSource, setSelectedSource] = useState<'basic' | 'user'>('basic');
 
   useEffect(() => {
-    void listCases().then(setCases).catch(() => setCases([]));
-    void listPublishedUserCases().then(setCommunityCases).catch(() => setCommunityCases([]));
+    Promise.all([
+      listCasesPaged({ sort: 'recommended', page: 0, size: 8 }).catch(() => ({
+        content: [] as CaseTemplateSummary[],
+      })),
+      listPublishedUserCasesPaged({ sort: 'recommended', page: 0, size: 8 }).catch(() => ({
+        content: [] as UserCaseDraftResponse[],
+      })),
+    ]).then(([basicPage, customPage]) => {
+      setCases(basicPage.content);
+      setCommunityCases(customPage.content);
+    });
   }, []);
 
   useEffect(() => {
@@ -469,23 +485,36 @@ export function HomePage() {
   return (
     <div className="space-y-8">
       {/* 배너 */}
-      <section className="relative rounded-2xl overflow-hidden">
-        <div className={`bg-gradient-to-r ${banner.gradient} px-8 md:px-16 py-16 md:py-24 transition-all duration-700`}>
-          <p className="text-gray-300 text-sm mb-2">AI Murder Mystery</p>
-          <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">{banner.title}</h1>
-          <p className="mt-3 text-lg text-gray-200">{banner.subtitle}</p>
-        </div>
-        <div className="absolute bottom-4 right-6 flex gap-1.5">
-          {BANNERS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setBannerIdx(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${i === bannerIdx ? 'bg-white' : 'bg-white/40'}`}
-              aria-label={`배너 ${i + 1}`}
-            />
-          ))}
-        </div>
-      </section>
+        <section className="relative rounded-2xl overflow-hidden">
+          <div
+            className={[
+              `bg-gradient-to-br ${banner.gradient}`,
+              "px-8 md:px-16 py-16 md:py-24 transition-all duration-700",
+              "relative overflow-hidden",
+              "after:content-[''] after:absolute after:inset-0 after:pointer-events-none",
+              "after:bg-gradient-to-tr after:from-white/25 after:via-white/10 after:to-transparent",
+              "after:translate-x-[-35%] after:skew-x-[-18deg]",
+            ].join(" ")}
+          >
+            <p className="text-white/80 text-sm mb-2">AI Murder Mystery</p>
+            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">{banner.title}</h1>
+            <p className="mt-3 text-lg text-white/90">{banner.subtitle}</p>
+          </div>
+
+          <div className="absolute bottom-4 right-6 flex gap-2">
+            {BANNERS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setBannerIdx(i)}
+                className={[
+                  "h-2 rounded-full transition-all duration-300",
+                  i === bannerIdx ? "w-6 bg-white shadow-sm" : "w-2 bg-white/40 hover:bg-white/60",
+                ].join(" ")}
+                aria-label={`배너 ${i + 1}`}
+              />
+            ))}
+          </div>
+        </section>
 
       {/* 직접 만들기 */}
       <ScrollSectionPlain title="직접" accent="만들기">
@@ -495,7 +524,7 @@ export function HomePage() {
 
       {/* 기본 사건 */}
       {cases.length > 0 && (
-        <ScrollSectionPlain title="기본 사건" accent="추천" to="/cases?tab=basic">
+        <ScrollSectionPlain title="기본 사건" accent="추천" to="/cases?tab=basic" layout="grid">
           {cases.map((c) => (
             <CaseCard key={c.id} c={c} onClick={openBasicCase} />
           ))}
@@ -503,7 +532,7 @@ export function HomePage() {
       )}
 
       {/* 커스텀 사건 */}
-      <ScrollSectionPlain title="커스텀" accent="사건" to="/cases?tab=custom">
+      <ScrollSectionPlain title="커스텀" accent="사건" to="/cases?tab=custom" layout="grid">
         {communityCases.map((c) => (
           <CommunityCaseCard key={c.id} c={c} onClick={openUserCase} />
         ))}
@@ -521,3 +550,4 @@ export function HomePage() {
     </div>
   );
 }
+
