@@ -27,15 +27,19 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 
     set({ status: 'story', publicId: null, errorMessage: null });
 
+    // SSE를 POST보다 먼저 연결 — 생성이 즉시 시작되어도 이벤트를 놓치지 않음
+    _subscribeToStream(set, get);
+
     try {
       const { publicId } = await startSessionAsync(payload);
       set({ publicId });
-      _subscribeToStream(set, get, publicId);
     } catch (err: unknown) {
+      const { _eventSource } = get();
+      if (_eventSource) _eventSource.close();
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         '사건 생성 요청에 실패했습니다.';
-      set({ status: 'error', errorMessage: message });
+      set({ status: 'error', errorMessage: message, _eventSource: null });
     }
   },
 
@@ -43,7 +47,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     const current = get();
     if (current.status !== 'idle') return;
     set({ status: 'story', publicId, errorMessage: null });
-    _subscribeToStream(set, get, publicId);
+    _subscribeToStream(set, get);
   },
 
   clear: () => {
@@ -58,7 +62,6 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 function _subscribeToStream(
   set: (partial: Partial<GenerationState>) => void,
   get: () => GenerationState,
-  _publicId: string
 ) {
   // 기존 연결 정리
   const existing = get()._eventSource;
