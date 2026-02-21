@@ -17,7 +17,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   bootstrap: async () => {
     setAuthFailureHandler(() => {
       set({ user: null });
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     });
     try {
       const me = await getMe();
