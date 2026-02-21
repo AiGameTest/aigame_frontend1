@@ -107,6 +107,7 @@ function AppFooter() {
             <span className="text-white/10">|</span>
             <Link to="/terms" className="hover:text-gray-300 transition-colors">이용약관</Link>
             <Link to="/privacy" className="hover:text-gray-300 transition-colors">개인정보처리방침</Link>
+            <a href="mailto:paper101214@gmail.com" className="hover:text-gray-300 transition-colors">문의</a>
           </nav>
         </div>
 
