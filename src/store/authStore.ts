@@ -10,14 +10,14 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   bootstrapping: true,
 
   bootstrap: async () => {
     setAuthFailureHandler(() => {
       set({ user: null });
-      if (window.location.pathname !== '/login') {
+      if (!get().bootstrapping && window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     });
