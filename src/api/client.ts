@@ -15,6 +15,7 @@ import type {
   CreateCommentRequest,
   CreateUserCaseDraftRequest,
   GameSessionResponse,
+  GenerationStartedResponse,
   InvestigateResponse,
   MoveRequest,
   MoveResponse,
@@ -217,6 +218,16 @@ export async function listMySessions(): Promise<SessionSummaryResponse[]> {
 export async function startSession(payload: StartSessionRequest): Promise<GameSessionResponse> {
   const { data } = await api.post<GameSessionResponse>('/sessions', payload);
   return data;
+}
+
+export async function startSessionAsync(payload: StartSessionRequest): Promise<GenerationStartedResponse> {
+  const { data } = await api.post<GenerationStartedResponse>('/sessions', payload);
+  return data;
+}
+
+export function connectGenerationStream(): EventSource {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api';
+  return new EventSource(`${baseUrl}/sessions/generation/stream`, { withCredentials: true });
 }
 
 export async function getSession(sessionPublicId: string): Promise<GameSessionResponse> {

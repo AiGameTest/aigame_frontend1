@@ -1,6 +1,6 @@
 ﻿export type GameMode = 'BASIC' | 'AI' | 'USER';
 export type CaseSourceType = 'BASIC_TEMPLATE' | 'USER_PUBLISHED' | 'AI_PROMPT';
-export type SessionStatus = 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED';
+export type SessionStatus = 'GENERATING' | 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED';
 export type UserRole = 'USER' | 'ADMIN';
 
 export interface OAuthLoginRequest { code: string; }
@@ -139,6 +139,10 @@ export interface UserCaseDraftResponse {
   playCount: number;
   recommendCount: number;
   recommended?: boolean;
+}
+
+export interface GenerationStartedResponse {
+  publicId: string;
 }
 
 export interface StartSessionRequest {

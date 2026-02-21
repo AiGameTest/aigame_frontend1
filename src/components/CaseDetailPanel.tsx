@@ -14,8 +14,8 @@ import {
   toggleCommentLike,
 } from '../api/client';
 import type { CaseCommentResponse, SessionSummaryResponse } from '../api/types';
-import { useSessionStore } from '../store/sessionStore';
 import { useAuthStore } from '../store/authStore';
+import { useGenerationStore } from '../store/generationStore';
 
 type CaseSource = 'basic' | 'user';
 type TabType = '소개' | '댓글';
@@ -146,16 +146,16 @@ function CommentItem({
 
 export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProps) {
   const navigate = useNavigate();
-  const start = useSessionStore((s) => s.start);
   const user = useAuthStore((s) => s.user);
+  const startGeneration = useGenerationStore((s) => s.startGeneration);
+  const genStatus = useGenerationStore((s) => s.status);
 
   const [detail, setDetail] = useState<PanelCase | null>(null);
   const [activeSession, setActiveSession] = useState<SessionSummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [startingMessageIndex, setStartingMessageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<TabType>('소개');
   const [recommending, setRecommending] = useState(false);
+  const [startingMessageIndex, setStartingMessageIndex] = useState(0);
 
   const [comments, setComments] = useState<CaseCommentResponse[]>([]);
   const [commentCount, setCommentCount] = useState(0);
@@ -168,8 +168,9 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   const replyInputRef = useRef<HTMLInputElement>(null);
 
   const isOpen = caseId !== null;
+  const isStarting = genStatus === 'story' || genStatus === 'images';
   useEffect(() => {
-    if (!starting) {
+    if (!isStarting) {
       setStartingMessageIndex(0);
       return;
     }
@@ -177,7 +178,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       setStartingMessageIndex((prev) => (prev + 1) % SESSION_BUILDING_MESSAGES.length);
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [starting]);
+  }, [isStarting]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -291,20 +292,16 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   }, [caseId, source]);
 
   async function handleStart() {
-    if (!detail || starting) return;
+    if (!detail || genStatus !== 'idle') return;
     if (!user) {
       navigate('/login');
       return;
     }
-    setStarting(true);
-    try {
-      const session = detail.source === 'user'
-        ? await start({ mode: 'USER', publishedUserCaseId: detail.id })
-        : await start({ mode: 'BASIC', basicCaseTemplateId: detail.id });
-      navigate(`/play/${session.publicId}`);
-    } finally {
-      setStarting(false);
-    }
+    await startGeneration(
+      detail.source === 'user'
+        ? { mode: 'USER', publishedUserCaseId: detail.id }
+        : { mode: 'BASIC', basicCaseTemplateId: detail.id }
+    );
   }
 
   function handleContinue() {
@@ -770,9 +767,9 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   <button
                     className="flex-1 py-2.5 rounded-xl bg-accent-pink text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
                     onClick={handleStart}
-                    disabled={starting}
+                    disabled={isStarting}
                   >
-                    {starting ? (
+                    {isStarting ? (
                       <span className="inline-flex items-center gap-2">
                         <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                         {SESSION_BUILDING_MESSAGES[startingMessageIndex]}

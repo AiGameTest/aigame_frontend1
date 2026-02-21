@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getMe, logout, oauthLogin, setAuthFailureHandler } from '../api/client';
+import { getMe, listMySessions, logout, oauthLogin, setAuthFailureHandler } from '../api/client';
 import type { UserMeResponse } from '../api/types';
 
 type AuthState = {
@@ -25,6 +25,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const me = await getMe();
       set({ user: me });
+
+      // GENERATING 세션 감지 → generationStore 복원 (순환 import 방지를 위해 동적 import)
+      try {
+        const sessions = await listMySessions();
+        const generating = sessions.find((s) => s.status === 'GENERATING');
+        if (generating) {
+          const { useGenerationStore } = await import('./generationStore');
+          useGenerationStore.getState().restore(generating.publicId);
+        }
+      } catch {
+        // non-critical — ignore errors
+      }
     } catch {
       set({ user: null });
     } finally {

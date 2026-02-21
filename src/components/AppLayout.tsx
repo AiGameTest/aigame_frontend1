@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useGenerationStore } from '../store/generationStore';
 
 function CoinIcon({ className = '' }: { className?: string }) {
   return (
@@ -125,6 +126,131 @@ function AppFooter() {
   );
 }
 
+function GenerationToast() {
+  const navigate = useNavigate();
+  const status = useGenerationStore((s) => s.status);
+  const publicId = useGenerationStore((s) => s.publicId);
+  const errorMessage = useGenerationStore((s) => s.errorMessage);
+  const clear = useGenerationStore((s) => s.clear);
+
+  if (status === 'idle') return null;
+
+  function handlePlay() {
+    if (publicId) {
+      clear();
+      navigate(`/play/${publicId}`);
+    }
+  }
+
+  const isGenerating = status === 'story' || status === 'images';
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-[200] w-[360px] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.7)] transition-all"
+      style={{
+        border: status === 'complete'
+          ? '1px solid rgba(34,197,94,0.25)'
+          : status === 'error'
+          ? '1px solid rgba(239,68,68,0.25)'
+          : '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      {/* 상단 컬러 바 */}
+      <div
+        className="h-[3px] w-full"
+        style={{
+          background: status === 'complete'
+            ? 'linear-gradient(90deg, #22c55e, #4ade80)'
+            : status === 'error'
+            ? 'linear-gradient(90deg, #ef4444, #f87171)'
+            : 'linear-gradient(90deg, #ff4d6d, #c026d3, #6366f1)',
+          backgroundSize: isGenerating ? '200% 100%' : '100% 100%',
+          animation: isGenerating ? 'toastShimmer 2s linear infinite' : 'none',
+        }}
+      />
+
+      <div className="bg-[#0d0f14]/95 backdrop-blur-xl px-4 py-3.5">
+        {/* 헤더 행 */}
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            {isGenerating && (
+              <div className="w-3.5 h-3.5 border-[1.5px] border-white/20 border-t-[#ff4d6d] rounded-full animate-spin flex-shrink-0" />
+            )}
+            {status === 'complete' && (
+              <svg className="w-3.5 h-3.5 text-green-400 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5.25" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M3.5 6l1.8 1.8 3.2-3.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+            {status === 'error' && (
+              <svg className="w-3.5 h-3.5 text-red-400 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5.25" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M4 4l4 4M8 4l-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            )}
+            <span className="text-[11px] font-bold tracking-[0.06em] uppercase"
+              style={{
+                color: status === 'complete' ? '#4ade80'
+                  : status === 'error' ? '#f87171'
+                  : 'rgba(255,255,255,0.4)',
+              }}
+            >
+              {status === 'complete' ? '생성 완료' : status === 'error' ? '생성 실패' : '사건 생성 중'}
+            </span>
+          </div>
+          <button
+            onClick={clear}
+            className="w-5 h-5 flex items-center justify-center rounded-full text-white/20 hover:text-white/50 hover:bg-white/5 transition-all text-[10px] leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 본문 */}
+        {isGenerating && (
+          <div>
+            <p className="text-sm font-semibold text-white/85 leading-snug">
+              {status === 'story' ? '스토리를 생성하고 있습니다' : '캐릭터 이미지를 생성하고 있습니다'}
+            </p>
+            <p className="text-[11px] text-white/35 mt-1">완료되면 알림이 표시됩니다</p>
+          </div>
+        )}
+
+        {status === 'complete' && (
+          <div>
+            <p className="text-sm font-bold text-white leading-snug">사건이 준비되었습니다!</p>
+            <p className="text-[11px] text-white/40 mt-1">지금 바로 수사를 시작할 수 있습니다</p>
+            <button
+              onClick={handlePlay}
+              className="mt-3 w-full py-2.5 rounded-xl text-sm font-black text-white tracking-wide transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, #ff4d6d, #e0365a)',
+                boxShadow: '0 4px 20px rgba(255,77,109,0.35)',
+              }}
+            >
+              수사 시작하기 →
+            </button>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div>
+            <p className="text-sm font-semibold text-white/85 leading-snug">생성에 실패했습니다</p>
+            <p className="text-[11px] text-red-400/70 mt-1 line-clamp-2">{errorMessage ?? '알 수 없는 오류가 발생했습니다'}</p>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes toastShimmer {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // PlayPage는 전체화면 레이아웃이라 footer 불필요
 const NO_FOOTER_PATHS = ['/play/'];
 
@@ -190,6 +316,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">{children}</main>
 
       {!hideFooter && <AppFooter />}
+      <GenerationToast />
     </div>
   );
 }

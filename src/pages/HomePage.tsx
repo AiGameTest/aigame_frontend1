@@ -5,8 +5,8 @@ import type { CaseTemplateSummary, UserCaseDraftResponse } from '../api/types';
 import { CaseCard } from '../components/CaseCard';
 import { CaseDetailPanel } from '../components/CaseDetailPanel';
 import { CroppedThumbnail } from '../components/CroppedThumbnail';
-import { useSessionStore } from '../store/sessionStore';
 import { useAuthStore } from '../store/authStore';
+import { useGenerationStore } from '../store/generationStore';
 
 const BANNERS = [
   {
@@ -35,15 +35,18 @@ function formatHour(h: number): string {
 // ── AI 모드 모달 ───────────────────────────────────────────
 function AiModeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
-  const start = useSessionStore((s) => s.start);
   const user = useAuthStore((s) => s.user);
+  const genStatus = useGenerationStore((s) => s.status);
+  const genPublicId = useGenerationStore((s) => s.publicId);
+  const genErrorMessage = useGenerationStore((s) => s.errorMessage);
+  const startGeneration = useGenerationStore((s) => s.startGeneration);
+  const clearGeneration = useGenerationStore((s) => s.clear);
 
   const [setting, setSetting] = useState('');
   const [victimProfile, setVictimProfile] = useState('');
   const [suspectCount, setSuspectCount] = useState(4);
   const [gameStartHour, setGameStartHour] = useState(12);
   const [gameEndHour, setGameEndHour] = useState(18);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -58,35 +61,41 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (loading) return;
     if (!user) {
       navigate('/login');
       return;
     }
-    setLoading(true);
-    try {
-      const session = await start({
-        mode: 'AI',
-        aiPrompt: {
-          setting: setting || undefined,
-          victimProfile: victimProfile || undefined,
-          suspectCount,
-        },
-        gameStartHour,
-        gameEndHour,
-      });
-      navigate(`/play/${session.publicId}`);
-    } finally {
-      setLoading(false);
+    await startGeneration({
+      mode: 'AI',
+      aiPrompt: {
+        setting: setting || undefined,
+        victimProfile: victimProfile || undefined,
+        suspectCount,
+      },
+      gameStartHour,
+      gameEndHour,
+    });
+  }
+
+  function handlePlayNow() {
+    if (genPublicId) {
+      clearGeneration();
+      navigate(`/play/${genPublicId}`);
     }
   }
+
+  function handleRetry() {
+    clearGeneration();
+  }
+
+  const isGenerating = genStatus === 'story' || genStatus === 'images';
 
   return (
     <>
       {/* 백드롭 */}
       <div
         className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md"
-        onClick={onClose}
+        onClick={isGenerating ? undefined : onClose}
       />
 
       {/* 모달 */}
@@ -126,13 +135,15 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {/* ── 닫기 버튼 ── */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full border border-white/10 bg-white/[0.06] text-white/40 hover:bg-white/[0.12] hover:text-white hover:border-white/20 transition-all flex items-center justify-center text-sm"
-          >
-            ✕
-          </button>
+          {/* ── 닫기 버튼 (생성 중에는 숨김) ── */}
+          {!isGenerating && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full border border-white/10 bg-white/[0.06] text-white/40 hover:bg-white/[0.12] hover:text-white hover:border-white/20 transition-all flex items-center justify-center text-sm"
+            >
+              ✕
+            </button>
+          )}
 
           {/* ── 콘텐츠 ── */}
           <div className="relative z-[1] px-8 pt-8 pb-7">
@@ -148,117 +159,159 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
               >
                 사건을<br /><span className="text-[#ff4d6d]">설계</span>하라
               </h2>
-              <p className="mt-2 text-xs text-white/30 leading-relaxed">
-                설정을 입력하면 AI가 매번 새로운 사건을 만들어드립니다.
-              </p>
+              {genStatus === 'idle' && (
+                <p className="mt-2 text-xs text-white/30 leading-relaxed">
+                  설정을 입력하면 AI가 매번 새로운 사건을 만들어드립니다.
+                </p>
+              )}
             </div>
 
             {/* 구분선 */}
             <div className="h-px bg-white/[0.06] -mx-8 mb-6" />
 
-            {/* 폼 */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* ── 상태별 화면 분기 ── */}
+            {genStatus === 'idle' && (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <FloatField label="장소 / 배경">
+                  <input
+                    className="cin-input"
+                    value={setting}
+                    onChange={(e) => setSetting(e.target.value)}
+                    placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
+                  />
+                </FloatField>
 
-              {/* 장소 */}
-              <FloatField label="장소 / 배경">
-                <input
-                  className="cin-input"
-                  value={setting}
-                  onChange={(e) => setSetting(e.target.value)}
-                  placeholder="예: 외딴 산장, 호화 유람선, 대학 캠퍼스..."
-                />
-              </FloatField>
+                <FloatField label="피해자 설정">
+                  <input
+                    className="cin-input"
+                    value={victimProfile}
+                    onChange={(e) => setVictimProfile(e.target.value)}
+                    placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
+                  />
+                </FloatField>
 
-              {/* 피해자 */}
-              <FloatField label="피해자 설정">
-                <input
-                  className="cin-input"
-                  value={victimProfile}
-                  onChange={(e) => setVictimProfile(e.target.value)}
-                  placeholder="예: 유명 미술품 수집가, 은퇴한 교수..."
-                />
-              </FloatField>
-
-              {/* 용의자 수 */}
-              <div>
-                <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">용의자 수</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[3, 4, 5, 6].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setSuspectCount(n)}
-                      className={`py-2.5 rounded-xl border font-bold text-sm transition-all ${
-                        suspectCount === n
-                          ? 'bg-[rgba(255,77,109,0.15)] border-[rgba(255,77,109,0.6)] text-white shadow-[0_0_10px_rgba(255,77,109,0.2)]'
-                          : 'bg-white/[0.04] border-white/[0.09] text-white/40 hover:bg-[rgba(255,77,109,0.08)] hover:border-[rgba(255,77,109,0.3)] hover:text-white/80'
-                      }`}
-                    >
-                      {n}명
-                    </button>
-                  ))}
+                <div>
+                  <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">용의자 수</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[3, 4, 5, 6].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setSuspectCount(n)}
+                        className={`py-2.5 rounded-xl border font-bold text-sm transition-all ${
+                          suspectCount === n
+                            ? 'bg-[rgba(255,77,109,0.15)] border-[rgba(255,77,109,0.6)] text-white shadow-[0_0_10px_rgba(255,77,109,0.2)]'
+                            : 'bg-white/[0.04] border-white/[0.09] text-white/40 hover:bg-[rgba(255,77,109,0.08)] hover:border-[rgba(255,77,109,0.3)] hover:text-white/80'
+                        }`}
+                      >
+                        {n}명
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 수사 시간 */}
-              <div>
-                <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">수사 시간</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <FloatField label="시작">
-                    <select
-                      className="cin-input"
-                      value={gameStartHour}
-                      onChange={(e) => setGameStartHour(Number(e.target.value))}
-                    >
-                      {Array.from({ length: 24 }, (_, i) => (
-                        <option key={i} value={i} className="bg-[#06080d]">{formatHour(i)}</option>
-                      ))}
-                    </select>
-                  </FloatField>
-                  <FloatField label="종료">
-                    <select
-                      className="cin-input"
-                      value={gameEndHour}
-                      onChange={(e) => setGameEndHour(Number(e.target.value))}
-                    >
-                      {Array.from({ length: 24 }, (_, i) => i + 1)
-                        .filter((h) => h > gameStartHour)
-                        .map((h) => (
-                          <option key={h} value={h} className="bg-[#06080d]">{formatHour(h)}</option>
+                <div>
+                  <p className="text-[11px] tracking-[0.12em] uppercase font-bold text-white/28 mb-2.5">수사 시간</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FloatField label="시작">
+                      <select
+                        className="cin-input"
+                        value={gameStartHour}
+                        onChange={(e) => setGameStartHour(Number(e.target.value))}
+                      >
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <option key={i} value={i} className="bg-[#06080d]">{formatHour(i)}</option>
                         ))}
-                    </select>
-                  </FloatField>
+                      </select>
+                    </FloatField>
+                    <FloatField label="종료">
+                      <select
+                        className="cin-input"
+                        value={gameEndHour}
+                        onChange={(e) => setGameEndHour(Number(e.target.value))}
+                      >
+                        {Array.from({ length: 24 }, (_, i) => i + 1)
+                          .filter((h) => h > gameStartHour)
+                          .map((h) => (
+                            <option key={h} value={h} className="bg-[#06080d]">{formatHour(h)}</option>
+                          ))}
+                      </select>
+                    </FloatField>
+                  </div>
+                  <p className="text-[11px] text-white/[0.22] mt-2 pl-0.5">
+                    행동 1회당 15분 소모 · 최대 {Math.floor(((gameEndHour - gameStartHour) * 60) / 15)}회 행동 가능
+                  </p>
                 </div>
-                <p className="text-[11px] text-white/[0.22] mt-2 pl-0.5">
-                  행동 1회당 15분 소모 · 최대 {Math.floor(((gameEndHour - gameStartHour) * 60) / 15)}회 행동 가능
-                </p>
+
+                <button
+                  type="submit"
+                  className="relative w-full py-4 rounded-2xl border-none font-black text-white text-[15px] tracking-wide cursor-pointer overflow-hidden transition-all"
+                  style={{ background: '#ff4d6d', boxShadow: '0 0 28px rgba(255,77,109,0.45)' }}
+                >
+                  <span
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1), transparent)' }}
+                  />
+                  사건 생성하기
+                </button>
+              </form>
+            )}
+
+            {(genStatus === 'story' || genStatus === 'images') && (
+              <div className="flex flex-col items-center py-8 gap-5">
+                <div className="w-12 h-12 border-4 border-white/20 border-t-[#ff4d6d] rounded-full animate-spin" />
+                <div className="text-center">
+                  <p className="text-white font-semibold text-base">
+                    {genStatus === 'story' ? '스토리를 생성하고 있습니다...' : '캐릭터 이미지를 생성하고 있습니다...'}
+                  </p>
+                  <p className="text-white/40 text-xs mt-1.5">모달을 닫아도 백그라운드에서 계속 생성됩니다</p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="mt-2 text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-2"
+                >
+                  백그라운드에서 계속하기
+                </button>
               </div>
+            )}
 
-              {/* 제출 버튼 */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="relative w-full py-4 rounded-2xl border-none font-black text-white text-[15px] tracking-wide cursor-pointer overflow-hidden transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{
-                  background: loading ? 'rgba(255,255,255,0.1)' : '#ff4d6d',
-                  boxShadow: loading ? 'none' : '0 0 28px rgba(255,77,109,0.45)',
-                }}
-              >
-                <span
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.1), transparent)' }}
-                />
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    AI가 사건을 생성하는 중...
-                  </span>
-                ) : (
-                  '사건 생성하기'
-                )}
-              </button>
+            {genStatus === 'complete' && (
+              <div className="flex flex-col items-center py-8 gap-5">
+                <div className="w-14 h-14 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-2xl">
+                  ✓
+                </div>
+                <div className="text-center">
+                  <p className="text-white font-bold text-lg">사건이 준비되었습니다!</p>
+                  <p className="text-white/40 text-xs mt-1.5">지금 바로 수사를 시작하세요</p>
+                </div>
+                <button
+                  onClick={handlePlayNow}
+                  className="w-full py-3.5 rounded-2xl font-black text-white text-[15px] tracking-wide"
+                  style={{ background: '#ff4d6d', boxShadow: '0 0 28px rgba(255,77,109,0.45)' }}
+                >
+                  플레이 시작
+                </button>
+              </div>
+            )}
 
-            </form>
+            {genStatus === 'error' && (
+              <div className="flex flex-col items-center py-8 gap-5">
+                <div className="w-14 h-14 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-2xl">
+                  ✕
+                </div>
+                <div className="text-center">
+                  <p className="text-white font-bold text-base">생성에 실패했습니다</p>
+                  <p className="text-white/50 text-xs mt-1.5">{genErrorMessage ?? '알 수 없는 오류가 발생했습니다.'}</p>
+                </div>
+                <button
+                  onClick={handleRetry}
+                  className="w-full py-3.5 rounded-2xl font-black text-white text-[15px] tracking-wide"
+                  style={{ background: 'rgba(255,77,109,0.7)' }}
+                >
+                  다시 시도
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
