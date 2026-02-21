@@ -36,6 +36,7 @@ function formatHour(h: number): string {
 function AiModeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const start = useSessionStore((s) => s.start);
+  const user = useAuthStore((s) => s.user);
 
   const [setting, setSetting] = useState('');
   const [victimProfile, setVictimProfile] = useState('');
@@ -58,6 +59,10 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (loading) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     setLoading(true);
     try {
       const session = await start({
@@ -473,10 +478,6 @@ export function HomePage() {
   }
 
   function handleAiModeClick() {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     setShowAiModal(true);
   }
 
