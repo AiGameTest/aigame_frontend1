@@ -70,30 +70,30 @@ body {
   /* Buttons */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           px-6 py-3
-           font-label text-[0.7rem] tracking-[0.28em] uppercase
+           px-7 py-4
+           font-label text-[0.82rem] tracking-[0.28em] uppercase
            text-void bg-gold border border-gold
            transition-all duration-200
            hover:bg-amber hover:border-amber
-           hover:shadow-[0_0_22px_rgba(201,164,71,0.38)]
+           hover:shadow-[0_0_24px_rgba(201,164,71,0.42)]
            active:scale-[0.97]
            disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2
-           px-6 py-3
-           font-label text-[0.7rem] tracking-[0.28em] uppercase
+           px-7 py-4
+           font-label text-[0.82rem] tracking-[0.28em] uppercase
            text-gold bg-transparent border border-gold-dim
            transition-all duration-200
            hover:border-gold hover:text-amber
-           hover:shadow-[0_0_16px_rgba(201,164,71,0.18)]
+           hover:shadow-[0_0_18px_rgba(201,164,71,0.2)]
            active:scale-[0.97]
            disabled:opacity-40 disabled:cursor-not-allowed;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2
-           px-5 py-2.5
-           font-label text-[0.7rem] tracking-[0.22em] uppercase
+           px-6 py-3.5
+           font-label text-[0.82rem] tracking-[0.22em] uppercase
            text-faded bg-transparent border border-ghost
            transition-all duration-200
            hover:border-gold-dim hover:text-sepia
@@ -101,8 +101,8 @@ body {
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2
-           px-6 py-3
-           font-label text-[0.7rem] tracking-[0.28em] uppercase
+           px-7 py-4
+           font-label text-[0.82rem] tracking-[0.28em] uppercase
            text-sepia bg-transparent border border-crimson
            transition-all duration-200
            hover:bg-crimson/20 hover:text-amber
@@ -112,9 +112,9 @@ body {
   /* Input */
   .noir-input {
     @apply w-full bg-dark border border-ghost
-           px-4 py-3
-           font-body text-sepia text-sm
-           placeholder:text-ghost placeholder:font-detail placeholder:text-xs
+           px-4 py-3.5
+           font-body text-sepia text-base
+           placeholder:text-ghost placeholder:font-detail placeholder:text-sm
            outline-none
            transition-all duration-200
            focus:border-gold-dim focus:shadow-[0_0_0_1px_rgba(125,100,40,0.35)];
@@ -131,8 +131,8 @@ body {
 
   /* Badge */
   .badge {
-    @apply inline-block px-2 py-0.5
-           font-detail text-[0.62rem] tracking-[0.2em] uppercase;
+    @apply inline-block px-2.5 py-1
+           font-detail text-[0.7rem] tracking-[0.18em] uppercase;
   }
   .badge-file  { @apply badge text-gold-dim border border-gold-dim/40; }
   .badge-open  { @apply badge text-amber bg-gold/10 border border-gold/25; }
@@ -169,10 +169,10 @@ body {
     @apply flex justify-between items-baseline mb-6;
   }
   .section-title {
-    @apply font-headline text-xl text-sepia tracking-[0.05em];
+    @apply font-headline text-2xl text-sepia tracking-[0.05em];
   }
   .section-link {
-    @apply font-detail text-xs text-faded tracking-widest uppercase
+    @apply font-detail text-sm text-faded tracking-widest uppercase
            hover:text-gold transition-colors cursor-pointer;
   }
 

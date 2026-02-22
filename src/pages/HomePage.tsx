@@ -95,11 +95,11 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
             {/* 헤더 */}
             <div className="mb-6">
               <p className="badge-file mb-3">사건 생성 · AI MODE</p>
-              <h2 className="font-headline text-2xl text-amber leading-tight">
+              <h2 className="font-headline text-3xl text-amber leading-tight">
                 사건을 설계하라
               </h2>
               {genStatus === 'idle' && (
-                <p className="font-body text-xs text-faded mt-2 italic">
+                <p className="font-body text-sm text-faded mt-2 italic">
                   설정을 입력하면 AI가 새로운 사건을 만들어드립니다.
                 </p>
               )}

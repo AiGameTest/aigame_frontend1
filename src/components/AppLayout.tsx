@@ -147,7 +147,7 @@ function GenerationToast() {
             {isGenerating && (
               <div className="w-3 h-3 border border-gold-dim border-t-transparent rounded-full animate-spin flex-shrink-0" />
             )}
-            <span className={`font-label text-[9px] tracking-[0.25em] uppercase ${
+            <span className={`font-label text-[11px] tracking-[0.2em] uppercase ${
               status === 'complete' ? 'text-amber' :
               status === 'error'    ? 'text-crimson' :
               'text-faded'
@@ -223,7 +223,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <nav className="hidden sm:flex items-center gap-1">
               <Link
                 to="/cases"
-                className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors px-3 py-1.5"
+                className="font-label text-xs tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors px-3 py-2"
               >
                 사건 목록
               </Link>
@@ -235,10 +235,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <>
                 <Link
                   to="/coins"
-                  className="flex items-center gap-1.5 px-3 py-1.5 border border-gold-dim/40 bg-gold/5 hover:bg-gold/10 hover:border-gold-dim transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 border border-gold-dim/40 bg-gold/5 hover:bg-gold/10 hover:border-gold-dim transition-colors"
                 >
-                  <CoinIcon className="w-3.5 h-3.5 text-gold-dim" />
-                  <span className="font-detail text-xs text-gold-dim">{user.coins.toLocaleString()} C</span>
+                  <CoinIcon className="w-4 h-4 text-gold-dim" />
+                  <span className="font-detail text-sm text-gold-dim">{user.coins.toLocaleString()} C</span>
                 </Link>
                 <UserDropdown
                   nickname={user.nickname}
@@ -250,7 +250,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 />
               </>
             ) : (
-              <Link to="/login" className="btn-secondary py-1.5 px-4 text-[0.65rem]">
+              <Link to="/login" className="btn-secondary py-2 px-5 text-[0.75rem]">
                 로그인
               </Link>
             )}
