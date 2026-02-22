@@ -30,8 +30,8 @@ export function LoginPage() {
 
           <div className="text-center mb-8">
             <p className="badge-file inline-block mb-4">DETECTIVE BUREAU</p>
-            <h1 className="font-display text-gold text-xl tracking-wider mb-2">Open Clue</h1>
-            <p className="font-body italic text-faded text-sm">수사에 참여하려면 신원을 확인하세요.</p>
+            <h1 className="font-display text-gold text-2xl tracking-wider mb-3">Open Clue</h1>
+            <p className="font-body italic text-faded text-base">수사에 참여하려면 신원을 확인하세요.</p>
           </div>
 
           {/* 구분선 */}
@@ -44,10 +44,10 @@ export function LoginPage() {
               onClick={() => handleOAuth2Login('kakao')}
               className="w-full flex items-center justify-center gap-3 py-3 border border-[#c9a300]/40 bg-[#FEE500]/10 hover:bg-[#FEE500]/18 transition-colors group"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#c9a300" d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.84 5.18 4.59 6.55-.16.57-.59 2.07-.68 2.39-.11.39.14.38.3.28.12-.08 1.96-1.33 2.76-1.87.66.1 1.34.15 2.03.15 5.52 0 10-3.48 10-7.5S17.52 3 12 3z"/>
               </svg>
-              <span className="font-label text-[10px] tracking-[0.2em] uppercase text-[#c9a300]">
+              <span className="font-label text-xs tracking-[0.2em] uppercase text-[#c9a300]">
                 카카오로 로그인
               </span>
             </button>

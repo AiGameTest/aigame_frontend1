@@ -73,7 +73,7 @@ export function CaseCard({ c, onClick }: CaseCardProps) {
       </div>
 
       {/* 파일 번호 + 난이도 */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2.5">
         <span className="badge-file">FILE #{String(c.id).padStart(3, '0')}</span>
         {diffBadge && diffLabel && (
           <span className={diffBadge}>{diffLabel}</span>
@@ -81,19 +81,19 @@ export function CaseCard({ c, onClick }: CaseCardProps) {
       </div>
 
       {/* 제목 */}
-      <h3 className="font-headline text-base text-amber leading-snug truncate group-hover:text-gold transition-colors mb-1.5">
+      <h3 className="font-headline text-lg text-amber leading-snug truncate group-hover:text-gold transition-colors mb-2">
         {c.title}
       </h3>
 
       {/* 설명 */}
-      <p className="font-body text-xs text-sepia/70 leading-relaxed line-clamp-2 italic mb-3">
+      <p className="font-body text-sm text-sepia/70 leading-relaxed line-clamp-2 italic mb-3">
         {c.description}
       </p>
 
       {/* 메타 */}
-      <div className="flex items-center gap-3 pt-2.5 border-t border-ghost/60">
-        <span className="font-detail text-[10px] text-faded tracking-wide">▶ {c.playCount ?? 0}</span>
-        <span className="font-detail text-[10px] text-faded tracking-wide">♥ {c.recommendCount ?? 0}</span>
+      <div className="flex items-center gap-3 pt-3 border-t border-ghost/60">
+        <span className="font-detail text-xs text-faded tracking-wide">▶ {c.playCount ?? 0}</span>
+        <span className="font-detail text-xs text-faded tracking-wide">♥ {c.recommendCount ?? 0}</span>
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
             {genStatus === 'idle' && (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div>
-                  <label className="font-label text-[9px] tracking-[0.25em] uppercase text-faded block mb-1.5">
+                  <label className="font-label text-xs tracking-[0.2em] uppercase text-faded block mb-2">
                     장소 / 배경
                   </label>
                   <input
@@ -123,7 +123,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div>
-                  <label className="font-label text-[9px] tracking-[0.25em] uppercase text-faded block mb-1.5">
+                  <label className="font-label text-xs tracking-[0.2em] uppercase text-faded block mb-2">
                     피해자 설정
                   </label>
                   <input
@@ -135,7 +135,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div>
-                  <label className="font-label text-[9px] tracking-[0.25em] uppercase text-faded block mb-1.5">
+                  <label className="font-label text-xs tracking-[0.2em] uppercase text-faded block mb-2">
                     용의자 수
                   </label>
                   <div className="grid grid-cols-4 gap-2">
@@ -144,9 +144,9 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                         key={n}
                         type="button"
                         onClick={() => setSuspectCount(n)}
-                        className={`py-2.5 border font-label text-xs tracking-wider transition-all ${
+                        className={`py-3 border font-label text-sm tracking-wider transition-all ${
                           suspectCount === n
-                            ? 'border-gold-dim bg-gold/8 text-gold'
+                            ? 'border-gold-dim bg-gold/10 text-gold'
                             : 'border-ghost bg-transparent text-ghost hover:border-gold-dim/50 hover:text-faded'
                         }`}
                       >
@@ -157,12 +157,12 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div>
-                  <label className="font-label text-[9px] tracking-[0.25em] uppercase text-faded block mb-1.5">
+                  <label className="font-label text-xs tracking-[0.2em] uppercase text-faded block mb-2">
                     수사 시간
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="font-detail text-[9px] text-ghost mb-1 tracking-wide">시작</p>
+                      <p className="font-detail text-xs text-ghost mb-1.5 tracking-wide">시작</p>
                       <select
                         className="noir-select"
                         value={gameStartHour}
@@ -174,7 +174,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                       </select>
                     </div>
                     <div>
-                      <p className="font-detail text-[9px] text-ghost mb-1 tracking-wide">종료</p>
+                      <p className="font-detail text-xs text-ghost mb-1.5 tracking-wide">종료</p>
                       <select
                         className="noir-select"
                         value={gameEndHour}
@@ -188,7 +188,7 @@ function AiModeModal({ onClose }: { onClose: () => void }) {
                       </select>
                     </div>
                   </div>
-                  <p className="font-detail text-[9px] text-ghost mt-2 tracking-wide">
+                  <p className="font-detail text-xs text-ghost mt-2 tracking-wide">
                     행동 1회당 15분 소모 · 최대 {Math.floor(((gameEndHour - gameStartHour) * 60) / 15)}회 행동 가능
                   </p>
                 </div>
