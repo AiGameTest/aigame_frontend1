@@ -1,4 +1,4 @@
-﻿import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { GameClock } from './CountdownTimer';
 import type { MessageLogItem } from '../api/types';
 
@@ -63,19 +63,22 @@ export function VNConversationView({
   const lastReply = getLastSuspectReply(messages);
 
   return (
-    <div className="h-[calc(100vh-72px)] rounded-2xl border border-white/10 bg-[#0b0d12] overflow-hidden flex flex-col">
-      <header className="border-b border-white/10 bg-black/45 px-4 py-3">
+    <div className="h-[calc(100vh-56px)] border border-ghost bg-void overflow-hidden flex flex-col">
+
+      {/* Header */}
+      <header className="border-b border-ghost bg-void/98 px-4 py-3 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={onBack}
-            className="px-3 py-1.5 rounded-md border border-white/15 text-sm text-gray-300 hover:text-white hover:border-white/30 transition-colors"
+            className="text-sm text-faded border border-ghost px-3 py-1.5 hover:border-gold-dim hover:text-sepia transition-colors"
+            style={{ fontFamily: "'Noto Serif KR', serif" }}
           >
-            뒤로가기
+            ← 수사실
           </button>
 
           <div className="text-center min-w-0">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-gray-500">심문</p>
-            <p className="text-sm font-bold text-white truncate">{suspect.name}</p>
+            <p className="font-detail text-xs tracking-[0.2em] uppercase text-gold-dim">INTERROGATION</p>
+            <p className="font-headline text-base text-sepia truncate">{suspect.name}</p>
           </div>
 
           <GameClock
@@ -87,67 +90,104 @@ export function VNConversationView({
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[320px_1fr]">
-        <aside className="border-b lg:border-b-0 lg:border-r border-white/10 bg-[#12161f] p-4 lg:p-5">
-          <div className="h-full rounded-xl border border-white/10 bg-black/25 p-4 flex flex-col">
-            <div className="mx-auto w-60 h-80 rounded-xl border border-white/10 bg-zinc-900 flex items-center justify-center overflow-hidden">
+      {/* Body */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[300px_1fr]">
+
+        {/* Left: Suspect File Panel */}
+        <aside className="border-b lg:border-b-0 lg:border-r border-ghost bg-shadow p-4 lg:p-5 overflow-y-auto">
+          <div className="flex flex-col h-full">
+
+            {/* Portrait */}
+            <div className="mx-auto w-full max-w-[200px] aspect-[3/4] border border-ghost bg-void overflow-hidden">
               {suspect.imageUrl ? (
-                <img src={suspect.imageUrl} alt={suspect.name} className="w-full h-full object-cover" />
+                <img
+                  src={suspect.imageUrl}
+                  alt={suspect.name}
+                  className="w-full h-full object-cover"
+                  style={{ filter: 'sepia(0.45) brightness(0.8) contrast(1.1)' }}
+                />
               ) : (
-                <svg viewBox="0 0 288 384" className="w-[85%] h-[85%]" fill="none">
-                  <circle cx="144" cy="112" r="54" fill="#737373" />
-                  <path d="M50 342 C50 256 94 220 144 220 C194 220 238 256 238 342" fill="#737373" />
-                </svg>
+                <div className="w-full h-full flex items-center justify-center bg-void">
+                  <svg viewBox="0 0 120 160" className="w-[75%] h-[75%]" fill="none">
+                    <circle cx="60" cy="50" r="24" fill="#3d3428" />
+                    <path d="M16 148 C16 100 36 80 60 80 C84 80 104 100 104 148" fill="#3d3428" />
+                  </svg>
+                </div>
               )}
             </div>
 
+            {/* Identity */}
             <div className="mt-4">
-              <p className="text-lg font-bold text-white">{suspect.name}</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <div className="h-[1px] bg-gold-dim/30 mb-3" />
+              <p className="text-xs text-gold-dim uppercase tracking-widest" style={{ fontFamily: "'Noto Serif KR', serif" }}>용의자 파일</p>
+              <h2 className="font-headline text-xl text-amber mt-1">{suspect.name}</h2>
+              <p className="text-sm text-sepia/75 mt-1" style={{ fontFamily: "'Noto Serif KR', serif" }}>
                 {suspect.age ? `${suspect.age}세` : '나이 미상'}
-                {suspect.personality ? ` / ${suspect.personality}` : ''}
+                {suspect.personality ? ` · ${suspect.personality}` : ''}
               </p>
             </div>
 
-            <div className="mt-4 rounded-lg border border-white/10 bg-zinc-900/70 p-3">
-              <p className="text-[11px] uppercase tracking-wide text-gray-500">배경</p>
-              <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+            {/* Background */}
+            <div className="mt-4 border border-ghost bg-paper/50 p-3">
+              <p className="text-sm text-faded mb-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>배경</p>
+              <p className="text-sm text-sepia leading-relaxed" style={{ fontFamily: "'Noto Serif KR', 'IM Fell English', serif" }}>
                 {suspect.background ?? '배경 정보가 없습니다.'}
               </p>
             </div>
 
-            <div className="mt-auto pt-4">
-              <p className="text-[11px] uppercase tracking-wide text-gray-500">현재 상태</p>
-              <p className="text-xs text-gray-300 mt-1">질문 1회당 게임 시간 15분이 경과합니다.</p>
-              {isTimeUp && <p className="text-xs text-red-300 mt-1">시간 초과로 질문이 비활성화되었습니다.</p>}
+            {/* Status note */}
+            <div className="mt-auto pt-4 border-t border-ghost/50">
+              <p className="text-sm text-faded mb-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>주의사항</p>
+              <p className="text-sm text-sepia/80 leading-relaxed" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                질문 1회당 게임 시간 15분이 경과합니다.
+              </p>
+              {isTimeUp && (
+                <p className="text-sm text-crimson mt-1.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                  시간 초과로 질문이 비활성화되었습니다.
+                </p>
+              )}
+              {suspectLeft && !isTimeUp && (
+                <p className="text-sm text-faded mt-1.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                  {suspect.name}이(가) 자리를 떠났습니다.
+                </p>
+              )}
             </div>
           </div>
         </aside>
 
-        <section className="min-h-0 flex flex-col bg-[#0d1118]">
-          <div className="border-b border-white/10 px-4 py-3 bg-black/25">
-            <div className="rounded-lg border border-white/10 bg-zinc-900/65 p-3">
-              <p className="text-[11px] uppercase tracking-wide text-gray-500">최근 진술</p>
-              <p className="text-sm text-gray-100 mt-1 leading-relaxed line-clamp-2">{lastReply}</p>
+        {/* Right: Transcript Panel */}
+        <section className="min-h-0 flex flex-col bg-void">
+
+          {/* Last reply preview */}
+          <div className="border-b border-ghost px-5 py-3 bg-shadow/60 shrink-0">
+            <div className="border border-ghost/50 bg-paper/30 px-3 py-2.5">
+              <p className="text-xs text-gold-dim uppercase tracking-wider mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>최근 진술</p>
+              <p className="text-sm text-sepia/85 leading-relaxed line-clamp-2" style={{ fontFamily: "'Noto Serif KR', 'IM Fell English', serif" }}>{lastReply}</p>
             </div>
           </div>
 
+          {/* Alert banners */}
           {isTimeUp && (
-            <div className="border-b border-red-700/40 bg-red-900/30 px-4 py-2 text-sm text-red-200 text-center">
-              제한 시간이 종료되었습니다. 더 이상 질문할 수 없습니다.
+            <div className="border-b border-crimson/30 bg-crimson/10 px-4 py-2 shrink-0">
+              <p className="text-sm text-crimson text-center" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                제한 시간 종료 — 더 이상 질문할 수 없습니다
+              </p>
             </div>
           )}
-
           {suspectLeft && !isTimeUp && (
-            <div className="border-b border-amber-700/40 bg-amber-900/20 px-4 py-2 text-sm text-amber-200 text-center">
-              {suspect.name}이(가) 자리를 떠났습니다. 다른 장소에서 만날 수 있습니다.
+            <div className="border-b border-ghost bg-shadow/60 px-4 py-2 shrink-0">
+              <p className="text-sm text-faded text-center" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                {suspect.name}이(가) 자리를 떠났습니다 — 다른 장소에서 만날 수 있습니다
+              </p>
             </div>
           )}
 
-          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
+          {/* Chat transcript */}
+          <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-5 space-y-4">
             {messages.length === 0 && !loading && (
-              <div className="text-center text-xs text-gray-500 py-8">
-                아직 대화 기록이 없습니다. 첫 질문을 입력해 보세요.
+              <div className="text-center py-12">
+                <p className="text-sm text-faded italic" style={{ fontFamily: "'Noto Serif KR', serif" }}>아직 대화 기록이 없습니다.</p>
+                <p className="text-sm text-faded mt-1.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>첫 질문을 입력해 수사를 시작하세요.</p>
               </div>
             )}
 
@@ -159,16 +199,17 @@ export function VNConversationView({
 
               return (
                 <div key={m.id} className={`flex ${isPlayer ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[88%] ${isPlayer ? 'items-end' : 'items-start'} flex flex-col`}>
-                    <div className={`text-[11px] mb-1 ${isPlayer ? 'text-gray-400' : 'text-zinc-300'}`}>
-                      {isPlayer ? '플레이어' : suspect.name}
-                    </div>
+                  <div className={`max-w-[85%] flex flex-col ${isPlayer ? 'items-end' : 'items-start'}`}>
+                    <span className={`text-xs mb-1.5 ${isPlayer ? 'text-gold-dim' : 'text-faded'}`} style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                      {isPlayer ? '▶ 질문' : `◀ ${suspect.name}`}
+                    </span>
                     <div
-                      className={`px-4 py-3 rounded-xl text-sm leading-relaxed border ${
+                      className={`px-4 py-3 border text-sm leading-relaxed ${
                         isPlayer
-                          ? 'bg-slate-800 border-slate-600 text-slate-100'
-                          : 'bg-zinc-900/80 border-zinc-700 text-gray-200'
+                          ? 'border-gold-dim/40 bg-dark text-sepia'
+                          : 'border-ghost bg-paper text-sepia/90'
                       }`}
+                      style={{ fontFamily: "'Noto Serif KR', 'IM Fell English', serif" }}
                     >
                       {displayContent}
                     </div>
@@ -179,10 +220,13 @@ export function VNConversationView({
 
             {loading && (
               <div className="flex justify-start">
-                <div className="max-w-[88%] flex flex-col items-start">
-                  <div className="text-[11px] mb-1 text-zinc-300">{suspect.name}</div>
-                  <div className="px-4 py-3 rounded-xl text-sm border bg-zinc-900/80 border-zinc-700 text-gray-400">
-                    답변을 생각하는 중...
+                <div className="max-w-[85%] flex flex-col items-start">
+                  <span className="text-xs text-faded mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                    ◀ {suspect.name}
+                  </span>
+                  <div className="px-4 py-3 border border-ghost bg-paper flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 border border-gold-dim border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <span className="text-sm text-faded italic" style={{ fontFamily: "'Noto Serif KR', serif" }}>답변을 생각하는 중...</span>
                   </div>
                 </div>
               </div>
@@ -190,17 +234,18 @@ export function VNConversationView({
 
             {suspectLeft && !isTimeUp && (
               <div className="flex justify-center">
-                <div className="px-4 py-2 rounded-full text-xs text-amber-300 bg-amber-900/30 border border-amber-700/40">
-                  {suspect.name}이(가) 자리를 떠났습니다.
+                <div className="text-sm text-faded border border-ghost px-4 py-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                  {suspect.name}이(가) 자리를 떠났습니다
                 </div>
               </div>
             )}
           </div>
 
-          <footer className="border-t border-white/10 bg-black/45 px-4 py-3">
+          {/* Input */}
+          <footer className="border-t border-ghost bg-void/98 px-5 py-3.5 shrink-0">
             <form className="flex gap-2" onSubmit={handleSubmit}>
               <input
-                className="input flex-1"
+                className="noir-input flex-1 py-3"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
@@ -213,9 +258,10 @@ export function VNConversationView({
                 disabled={loading || isTimeUp || suspectLeft}
               />
               <button
-                className="px-4 py-2 rounded-md bg-accent-pink text-white font-semibold hover:opacity-90 disabled:opacity-50"
+                className="btn-primary px-6 py-3 text-sm"
                 type="submit"
                 disabled={!input.trim() || loading || isTimeUp || suspectLeft}
+                style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
                 전송
               </button>

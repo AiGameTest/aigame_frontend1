@@ -17,20 +17,21 @@ export function GameClock({ gameStartHour, gameEndHour, gameMinutesUsed, current
   const mins = remaining % 60;
 
   return (
-    <div className="rounded-xl border border-dark-border bg-black/30 px-3 py-2 min-w-[180px]">
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-wide">
-        <span className="text-gray-400">게임 시간</span>
-        <span className={isUrgent ? 'text-red-400' : 'text-emerald-300'}>
-          {hrs}시간 {mins.toString().padStart(2, '0')}분
+    <div className="border border-ghost bg-shadow px-4 py-2.5 min-w-[200px]">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="font-headline text-[10px] text-base text-sepia">게임 시간</span>
+        <span className="font-headline text-[10px] text-base text-sepia">/</span>
+        <span className={`font-headline text-[10px] text-base text-sepia ${isUrgent ? 'text-crimson' : 'text-amber'}`}>
+           {hrs} : {mins.toString().padStart(2, '0')} 남음
         </span>
       </div>
-      <div className="mt-1.5 flex items-center gap-2">
-        <span className="text-sm font-bold text-white">{currentGameTime}</span>
-        <span className="text-[11px] text-gray-500">/ {endPeriod} {endHour}:00</span>
+      <div className="flex items-center gap-2">
+        <span className="font-headline text-[10px] text-base text-sepia">{currentGameTime}</span>
+        <span className="font-headline text-[10px] text-base text-sepia">/ {endPeriod} {endHour}:00</span>
       </div>
-      <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+      <div className="mt-2 h-[2px] bg-ghost overflow-hidden">
         <div
-          className={`h-full transition-all duration-500 ${isUrgent ? 'bg-red-500' : 'bg-emerald-400'}`}
+          className={`h-full transition-all duration-500 ${isUrgent ? 'bg-crimson' : 'bg-gold-dim'}`}
           style={{ width: `${progress}%` }}
         />
       </div>

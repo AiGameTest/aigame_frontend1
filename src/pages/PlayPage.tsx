@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AccuseModal } from '../components/AccuseModal';
 import { ActionButtons } from '../components/ActionButtons';
@@ -89,13 +89,6 @@ function buildSuspectLocationMap(story: StoryData, sessionId: number, gameStartH
 function getSuspectsAtLocation(suspectMap: Map<string, SuspectProfile[]>, location: string | null): SuspectProfile[] {
   if (!location) return [];
   return suspectMap.get(location) ?? [];
-}
-
-function statusLabel(status: string): string {
-  if (status === 'ACTIVE') return '진행 중';
-  if (status === 'WON') return '해결';
-  if (status === 'LOST') return '실패';
-  return '종료';
 }
 
 function formatDateTime(value: string): string {
@@ -293,7 +286,14 @@ export function PlayPage() {
   }
 
   if (!current) {
-    return <div className="min-h-[60vh] grid place-items-center text-gray-400">세션 불러오는 중...</div>;
+    return (
+      <div className="min-h-[60vh] grid place-items-center">
+        <div className="text-center">
+          <div className="w-5 h-5 border border-gold-dim border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="font-detail text-xs tracking-[0.2em] uppercase text-faded">수사 파일 불러오는 중...</p>
+        </div>
+      </div>
+    );
   }
 
   const caseTitle = story.title ?? `Case #${current.id}`;
@@ -323,110 +323,136 @@ export function PlayPage() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-72px)] overflow-hidden rounded-2xl border border-white/10 bg-[#0c0f14]">
+    <div className="relative h-[calc(100vh-56px)] overflow-hidden border border-ghost bg-void">
       <div className="relative z-10 flex h-full flex-col">
-        <header className="border-b border-white/10 bg-black/40 px-4 md:px-6 py-3 backdrop-blur-md">
+
+        {/* Case Header */}
+        <header className="border-b border-ghost bg-void/98 px-4 md:px-6 py-3 shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">진행 중인 수사</p>
-              <h1 className="text-lg md:text-xl font-extrabold text-white">{caseTitle}</h1>
+              <span className="font-detail text-xs tracking-[0.2em] uppercase text-gold-dim">ACTIVE INVESTIGATION</span>
+              <h1 className="font-headline text-lg md:text-xl text-sepia mt-0.5">{caseTitle}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <GameClock
-                gameStartHour={current.gameStartHour}
-                gameEndHour={current.gameEndHour}
-                gameMinutesUsed={current.gameMinutesUsed}
-                currentGameTime={current.currentGameTime}
-              />
-            </div>
+            <GameClock
+              gameStartHour={current.gameStartHour}
+              gameEndHour={current.gameEndHour}
+              gameMinutesUsed={current.gameMinutesUsed}
+              currentGameTime={current.currentGameTime}
+            />
           </div>
         </header>
 
-        <div className="border-b border-white/10 bg-black/30 px-4 md:px-6 py-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
-            <StatCard label="현재 위치" value={currentLocation ?? '알 수 없음'} tone="cyan" />
+        {/* Stat Bar */}
+        <div className="border-b border-ghost bg-shadow/80 px-4 md:px-6 py-2.5 shrink-0">
+          <div className="grid grid-cols-3 gap-2 md:gap-4">
+            <StatCard label="현재 위치" value={currentLocation ?? '알 수 없음'} />
             <StatCard
               label="남은 시간"
-              value={`${Math.floor(remainingMinutes / 60)}시간 ${String(remainingMinutes % 60).padStart(2, '0')}분`}
-              tone={isTimeUp ? 'rose' : 'amber'}
+              value={`${Math.floor(remainingMinutes / 60)}h ${String(remainingMinutes % 60).padStart(2, '0')}m`}
+              urgent={isTimeUp}
             />
-            <StatCard label="수집 단서" value={`${current.evidence.length}개`} tone="emerald" />
+            <StatCard label="수집 단서" value={`${current.evidence.length}개`} highlight />
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-4 pb-24">
-          <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-4">
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-4 pb-20">
+          <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_0.6fr] gap-4">
+
+            {/* Left Column */}
             <section className="space-y-4">
+
+              {/* Opening narration */}
               {openingNarration && (
-                <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <h2 className="text-sm font-semibold text-gray-100">사건 개요</h2>
-                  <p className="mt-2 text-sm text-gray-200 leading-relaxed whitespace-pre-line">
+                <div className="border border-ghost bg-paper p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="badge-file">사건 개요</span>
+                  </div>
+                  <p className="font-body italic text-sm text-sepia/80 leading-relaxed whitespace-pre-line">
                     {openingNarration}
                   </p>
                 </div>
               )}
 
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-gray-100">장소</h2>
+              {/* Locations */}
+              <div className="border border-ghost bg-paper p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-sepia font-medium" style={{ fontFamily: "'Noto Serif KR', serif" }}>장소</span>
                   <button
                     onClick={() => setShowLocationModal(true)}
-                    className="text-xs px-3 py-1.5 rounded-md border border-gray-500/60 text-gray-200 hover:bg-white/10 transition-colors"
+                    className="text-sm text-gold-dim border border-gold-dim/40 px-3 py-1.5 hover:border-gold-dim hover:text-amber transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ fontFamily: "'Noto Serif KR', serif" }}
                     disabled={!isActive}
                   >
                     위치 이동
                   </button>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
                   {locations.map((loc) => (
                     <span
                       key={loc}
-                      className={`px-2 py-1 rounded-full text-xs border ${loc === currentLocation ? 'border-gray-300/70 bg-white/10 text-gray-100' : 'border-white/15 text-gray-300'}`}
+                      className={`text-sm px-3 py-1.5 border transition-colors ${
+                        loc === currentLocation
+                          ? 'border-gold-dim/60 bg-gold/10 text-amber'
+                          : 'border-ghost text-sepia/70'
+                      }`}
+                      style={{ fontFamily: "'Noto Serif KR', serif" }}
                     >
+                      {loc === currentLocation && <span className="mr-1.5 text-gold-dim">◆</span>}
                       {loc}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-white">현재 장소의 용의자</h2>
-                  <span className="text-xs text-gray-400">{suspectsHere.length}명</span>
+              {/* Suspects at current location */}
+              <div className="border border-ghost bg-paper p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-sepia font-medium" style={{ fontFamily: "'Noto Serif KR', serif" }}>현재 장소의 용의자</span>
+                  <span className="text-sm text-faded" style={{ fontFamily: "'Noto Serif KR', serif" }}>{suspectsHere.length}명</span>
                 </div>
 
                 {suspectsHere.length === 0 ? (
-                  <p className="mt-4 text-sm text-gray-500">이 장소에는 용의자가 없습니다.</p>
+                  <p className="text-sm text-faded py-3 italic" style={{ fontFamily: "'Noto Serif KR', serif" }}>이 장소에는 용의자가 없습니다.</p>
                 ) : (
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {suspectsHere.map((s) => (
                       <button
                         key={s.name}
-                        className="text-left rounded-xl border border-white/10 bg-zinc-900/70 p-3 hover:border-gray-300/40 hover:-translate-y-0.5 transition-all"
+                        className="text-left border border-ghost bg-shadow hover:border-gold-dim hover:-translate-y-0.5 transition-all group p-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => handleCharacterSelect(s.name)}
                         disabled={!isActive}
                       >
                         <div className="flex items-start gap-3">
                           {s.imageUrl ? (
-                            <img src={s.imageUrl} alt={s.name} className="w-12 h-12 rounded-lg object-cover border border-white/10 flex-shrink-0" />
+                            <img
+                              src={s.imageUrl}
+                              alt={s.name}
+                              className="w-12 h-14 object-cover border border-ghost flex-shrink-0"
+                              style={{ filter: 'sepia(0.4) brightness(0.85)' }}
+                            />
                           ) : (
-                            <div className="w-12 h-12 rounded-lg bg-zinc-800 flex-shrink-0 flex items-center justify-center">
-                              <svg viewBox="0 0 80 80" className="w-8 h-8" fill="none">
-                                <circle cx="40" cy="28" r="14" fill="#555" />
-                                <path d="M16 72 C16 52 28 44 40 44 C52 44 64 52 64 72" fill="#555" />
+                            <div className="w-12 h-14 bg-void border border-ghost flex-shrink-0 flex items-center justify-center">
+                              <svg viewBox="0 0 48 64" className="w-8 h-10" fill="none">
+                                <circle cx="24" cy="18" r="9" fill="#3d3428" />
+                                <path d="M8 56 C8 38 16 30 24 30 C32 30 40 38 40 56" fill="#3d3428" />
                               </svg>
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-semibold text-gray-100">{s.name}</p>
-                              <span className="text-[10px] uppercase tracking-wide text-gray-300">대화</span>
-                            </div>
-                            <p className="mt-1 text-xs text-gray-400">
+                            <p className="font-headline text-base text-amber group-hover:text-gold transition-colors truncate">{s.name}</p>
+                            <p className="text-sm text-sepia/70 mt-0.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>
                               {s.age ? `${s.age}세` : '나이 미상'}{s.personality ? ` / ${s.personality}` : ''}
                             </p>
-                            {s.background && <p className="mt-1 text-xs text-gray-500 line-clamp-2">{s.background}</p>}
+                            {s.background && (
+                              <p className="text-sm text-sepia/80 mt-1 line-clamp-2 italic" style={{ fontFamily: "'Noto Serif KR', serif" }}>{s.background}</p>
+                            )}
                           </div>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-ghost/50 flex justify-end">
+                          <span className="font-label text-[13px] tracking-[0.2em] uppercase text-gold-dim group-hover:text-gold transition-colors">
+                            심문하기 →
+                          </span>
                         </div>
                       </button>
                     ))}
@@ -434,70 +460,89 @@ export function PlayPage() {
                 )}
               </div>
 
+              {/* Found evidence result */}
               {foundEvidence !== null && (
-                <div className={`rounded-xl p-3 border ${foundEvidence.length > 0 ? 'bg-amber-900/30 border-amber-700/40' : 'bg-gray-800/50 border-dark-border'}`}>
+                <div className={`border p-4 ${
+                  foundEvidence.length > 0
+                    ? 'border-gold-dim/50 bg-gold/5'
+                    : 'border-ghost bg-shadow'
+                }`}>
                   {foundEvidence.length > 0 ? (
                     <>
-                      <div className="text-xs text-amber-300 font-medium mb-1">새 단서 발견</div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="badge-open">새 단서 발견</span>
+                      </div>
                       {foundEvidence.map((e) => (
-                        <div key={e.id} className="text-xs text-amber-200 ml-2">
-                          - <strong>{e.title}</strong> : {e.detail}
+                        <div key={e.id} className="mt-2">
+                          <p className="font-label text-xs text-amber">{e.title}</p>
+                          <p className="font-body italic text-sm text-sepia/80 mt-0.5">{e.detail}</p>
                         </div>
                       ))}
                     </>
                   ) : (
-                    <div className="text-sm text-gray-400 text-center py-1">이 장소에서 추가 단서를 찾지 못했습니다.</div>
+                    <p className="font-body italic text-sm text-faded text-center py-1">
+                      이 장소에서 추가 단서를 찾지 못했습니다.
+                    </p>
                   )}
                 </div>
               )}
             </section>
 
+            {/* Right Sidebar */}
             <aside className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <h3 className="text-sm font-semibold text-white">증거 수첩</h3>
-                <div className="mt-3 space-y-2 max-h-[330px] overflow-auto pr-1">
+
+              {/* Evidence Notebook */}
+              <div className="border border-ghost bg-paper p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm text-sepia font-medium" style={{ fontFamily: "'Noto Serif KR', serif" }}>증거 수첩</span>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-auto pr-1">
                   {current.evidence.length === 0 ? (
-                    <p className="text-xs text-gray-500">아직 발견한 증거가 없습니다.</p>
+                    <p className="text-sm text-faded italic" style={{ fontFamily: "'Noto Serif KR', serif" }}>아직 발견한 증거가 없습니다.</p>
                   ) : (
                     current.evidence.map((item) => (
-                      <div key={item.id} className="rounded-lg border border-white/10 bg-black/30 p-2.5">
-                        <p className="text-xs font-semibold text-gray-200">{item.title}</p>
-                        <p className="mt-1 text-xs text-gray-300 line-clamp-4">{item.detail}</p>
-                        <p className="mt-1 text-[11px] text-gray-500">{formatDateTime(item.discoveredAt)}</p>
+                      <div key={item.id} className="border border-ghost/60 bg-shadow p-2.5">
+                        <p className="text-sm text-amber font-medium" style={{ fontFamily: "'Noto Serif KR', 'Playfair Display', serif" }}>{item.title}</p>
+                        <p className="text-sm text-sepia/85 mt-1 leading-relaxed line-clamp-3 italic" style={{ fontFamily: "'Noto Serif KR', 'IM Fell English', serif" }}>{item.detail}</p>
+                        <p className="font-detail text-xs text-faded mt-1">{formatDateTime(item.discoveredAt)}</p>
                       </div>
                     ))
                   )}
                 </div>
-                <p className="mt-3 text-[11px] text-gray-500">
-                  수집한 증거는 수사 종료 전까지 모두 보관됩니다.
+                <p className="mt-3 text-xs text-faded border-t border-ghost/40 pt-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                  수집한 증거는 수사 종료 전까지 보관됩니다.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <h3 className="text-sm font-semibold text-white">심문 기록</h3>
-                <div className="mt-3 space-y-2 max-h-[260px] overflow-auto pr-1">
+              {/* Interrogation Log */}
+              <div className="border border-ghost bg-paper p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm text-sepia font-medium" style={{ fontFamily: "'Noto Serif KR', serif" }}>심문 기록</span>
+                </div>
+                <div className="space-y-2 max-h-[250px] overflow-auto pr-1">
                   {suspectNames.length === 0 ? (
-                    <p className="text-xs text-gray-500">용의자 정보가 없습니다.</p>
+                    <p className="text-sm text-faded italic" style={{ fontFamily: "'Noto Serif KR', serif" }}>용의자 정보가 없습니다.</p>
                   ) : (
                     suspectNames.map((name) => {
                       const logs = suspectChatMap.get(name) ?? [];
                       const questionCount = logs.filter((l) => l.role === 'PLAYER').length;
                       const lastAt = logs.length > 0 ? logs[logs.length - 1].createdAt : null;
                       return (
-                        <div key={name} className="rounded-lg border border-white/10 bg-black/30 p-2.5">
+                        <div key={name} className="border border-ghost/60 bg-shadow p-2.5 hover:border-gold-dim/40 transition-colors">
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold text-gray-200 truncate">{name}</p>
-                              <p className="text-[11px] text-gray-500">
+                              <p className="text-sm text-sepia font-medium truncate" style={{ fontFamily: "'Noto Serif KR', serif" }}>{name}</p>
+                              <p className="text-xs text-faded mt-0.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>
                                 대화 {questionCount}회
-                                {lastAt ? ` · 최근 ${formatDateTime(lastAt)}` : ''}
+                                {lastAt ? ` · ${formatDateTime(lastAt)}` : ''}
                               </p>
                             </div>
                             <button
                               type="button"
                               onClick={() => setChatLogSuspect(name)}
                               disabled={logs.length === 0}
-                              className="px-2 py-1 rounded-md border border-white/15 text-[11px] text-gray-300 hover:text-white hover:border-white/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="text-xs text-faded border border-ghost hover:border-gold-dim hover:text-gold-dim px-2.5 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              style={{ fontFamily: "'Noto Serif KR', serif" }}
                             >
                               보기
                             </button>
@@ -507,15 +552,16 @@ export function PlayPage() {
                     })
                   )}
                 </div>
-                <p className="mt-3 text-[11px] text-gray-500">
-                  용의자별 심문 기록을 모아서 확인할 수 있습니다.
+                <p className="mt-3 text-xs text-faded border-t border-ghost/40 pt-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                  용의자별 심문 기록을 확인할 수 있습니다.
                 </p>
               </div>
             </aside>
           </div>
         </main>
 
-        <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/60 backdrop-blur-md">
+        {/* Action Bar */}
+        <div className="absolute bottom-0 left-0 right-0 shrink-0">
           <ActionButtons
             onMove={() => setShowLocationModal(true)}
             onInvestigate={handleInvestigate}
@@ -527,6 +573,7 @@ export function PlayPage() {
         </div>
       </div>
 
+      {/* Modals */}
       <LocationSelectModal
         open={showLocationModal}
         locations={locations}
@@ -548,46 +595,55 @@ export function PlayPage() {
         onSubmit={submitAccuse}
       />
 
+      {/* Chat Log Modal */}
       {chatLogSuspect && (
         <div
-          className="fixed inset-0 z-[70] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[70] bg-void/80 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setChatLogSuspect(null)}
         >
           <div
-            className="w-full max-w-2xl rounded-2xl border border-white/15 bg-[#0f1218] overflow-hidden"
+            className="w-full max-w-2xl border border-ghost bg-shadow overflow-hidden"
+            style={{ boxShadow: '0 24px 60px rgba(0,0,0,0.8)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <h3 className="text-sm font-semibold text-white">{chatLogSuspect} 심문 기록</h3>
+            <div className="h-[1px] w-full bg-gold-dim" />
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-ghost">
+              <div>
+                <span className="font-detail text-xs tracking-[0.2em] uppercase text-gold-dim">TRANSCRIPT</span>
+                <h3 className="font-headline text-lg text-sepia mt-0.5">{chatLogSuspect} 심문 기록</h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setChatLogSuspect(null)}
-                className="px-2 py-1 rounded-md border border-white/15 text-xs text-gray-300 hover:text-white hover:border-white/30"
+                className="text-sm text-faded border border-ghost hover:border-gold-dim hover:text-sepia px-3 py-1.5 transition-colors"
+                style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
                 닫기
               </button>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto px-4 py-3 space-y-2">
+            <div className="max-h-[60vh] overflow-y-auto px-5 py-4 space-y-3">
               {(suspectChatMap.get(chatLogSuspect) ?? []).length === 0 ? (
-                <p className="text-xs text-gray-500">아직 기록이 없습니다.</p>
+                <p className="font-body italic text-sm text-faded text-center py-6">아직 기록이 없습니다.</p>
               ) : (
                 (suspectChatMap.get(chatLogSuspect) ?? []).map((item) => (
                   <div
                     key={item.id}
-                    className={`rounded-lg border p-2.5 ${
+                    className={`border p-3 ${
                       item.role === 'PLAYER'
-                        ? 'border-cyan-800/50 bg-cyan-950/20'
-                        : 'border-white/10 bg-black/30'
+                        ? 'border-gold-dim/30 bg-gold/5'
+                        : 'border-ghost bg-paper'
                     }`}
                   >
-                    <p className="text-[11px] uppercase tracking-wide text-gray-400">
-                      {item.role === 'PLAYER' ? '질문' : '답변'}
+                    <p className="text-xs text-faded mb-1.5" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                      {item.role === 'PLAYER' ? '▶ 질문' : `◀ ${chatLogSuspect}`}
                     </p>
-                    <p className="mt-1 text-sm text-gray-200 whitespace-pre-wrap">
+                    <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                      item.role === 'PLAYER' ? 'text-sepia' : 'italic text-sepia/85'
+                    }`} style={{ fontFamily: "'Noto Serif KR', serif" }}>
                       {item.role === 'PLAYER' ? stripPlayerPrefix(item.content) : item.content}
                     </p>
-                    <p className="mt-1 text-[11px] text-gray-500">{formatDateTime(item.createdAt)}</p>
+                    <p className="font-detail text-xs text-faded mt-1.5">{formatDateTime(item.createdAt)}</p>
                   </div>
                 ))
               )}
@@ -599,20 +655,19 @@ export function PlayPage() {
   );
 }
 
-function StatCard({ label, value, tone }: { label: string; value: string; tone: 'cyan' | 'violet' | 'emerald' | 'amber' | 'rose' }) {
-  const toneMap: Record<string, string> = {
-    cyan: 'bg-slate-800/70 border-slate-500/40 text-slate-100',
-    violet: 'bg-slate-800/70 border-slate-500/40 text-slate-100',
-    emerald: 'bg-slate-800/70 border-slate-500/40 text-slate-100',
-    amber: 'bg-zinc-800/80 border-zinc-500/40 text-zinc-100',
-    rose: 'bg-red-950/40 border-red-500/40 text-red-100',
-  };
-
+function StatCard({ label, value, urgent, highlight }: { label: string; value: string; urgent?: boolean; highlight?: boolean }) {
   return (
-    <div className={`rounded-xl border p-2.5 ${toneMap[tone]}`}>
-      <p className="text-[10px] uppercase tracking-wide opacity-80">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white truncate">{value}</p>
+    <div className={`border px-3 py-2.5 ${
+      urgent ? 'border-crimson/40 bg-crimson/5' :
+      highlight ? 'border-gold-dim/30 bg-gold/5' :
+      'border-ghost bg-shadow'
+    }`}>
+      <p className="text-xs text-faded" style={{ fontFamily: "'Noto Serif KR', serif" }}>{label}</p>
+      <p className={`text-base font-medium mt-0.5 truncate ${
+        urgent ? 'text-crimson' :
+        highlight ? 'text-amber' :
+        'text-sepia'
+      }`} style={{ fontFamily: "'Noto Serif KR', 'Playfair Display', serif" }}>{value}</p>
     </div>
   );
 }
-

@@ -81,26 +81,26 @@ function AppFooter() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <span className="font-display text-base text-gold-dim tracking-wider">Open Clue</span>
-            <p className="font-detail text-[10px] text-faded mt-1 tracking-widest uppercase">
+            <p className="font-detail text-xs text-faded mt-1 tracking-widest uppercase">
               AI Murder Mystery
             </p>
           </div>
 
-          <nav className="flex flex-wrap gap-x-6 gap-y-2">
-            <Link to="/cases?tab=basic" className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors">사건 목록</Link>
-            <Link to="/create" className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors">사건 만들기</Link>
-            <Link to="/coins" className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors">코인 충전</Link>
-            <span className="text-ghost">·</span>
-            <Link to="/terms" className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors">이용약관</Link>
-            <Link to="/privacy" className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors">개인정보처리방침</Link>
-            <a href="mailto:paper101214@gmail.com" className="font-label text-[10px] tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors">문의</a>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+            <Link to="/cases?tab=basic" className="text-sm text-gold-dim hover:text-gold transition-colors">사건 목록</Link>
+            <Link to="/create" className="text-sm text-gold-dim hover:text-gold transition-colors">사건 만들기</Link>
+            <Link to="/coins" className="text-sm text-gold-dim hover:text-gold transition-colors">코인 충전</Link>
+            <span className="text-faded">·</span>
+            <Link to="/terms" className="text-sm text-faded hover:text-sepia transition-colors">이용약관</Link>
+            <Link to="/privacy" className="text-sm text-faded hover:text-sepia transition-colors">개인정보처리방침</Link>
+            <a href="mailto:paper101214@gmail.com" className="text-sm text-faded hover:text-sepia transition-colors">문의</a>
           </nav>
         </div>
 
         <div className="mt-6 pt-5 border-t border-ghost/50">
-          <p className="font-detail text-[10px] text-ghost tracking-widest">
+          <p className="text-xs text-faded" style={{ fontFamily: "'Noto Serif KR', serif" }}>
             © {year} Open Clue. All rights reserved.
-            <span className="mx-3 text-ghost/50">·</span>
+            <span className="mx-3 text-ghost">·</span>
             현재 코인 충전 기능은 정식 출시 전 준비 중입니다.
           </p>
         </div>
@@ -147,17 +147,17 @@ function GenerationToast() {
             {isGenerating && (
               <div className="w-3 h-3 border border-gold-dim border-t-transparent rounded-full animate-spin flex-shrink-0" />
             )}
-            <span className={`font-label text-[11px] tracking-[0.2em] uppercase ${
+            <span className={`text-sm ${
               status === 'complete' ? 'text-amber' :
               status === 'error'    ? 'text-crimson' :
-              'text-faded'
-            }`}>
+              'text-sepia'
+            }`} style={{ fontFamily: "'Noto Serif KR', serif" }}>
               {status === 'complete' ? '생성 완료' : status === 'error' ? '생성 실패' : '사건 생성 중'}
             </span>
           </div>
           <button
             onClick={clear}
-            className="font-detail text-[10px] text-ghost hover:text-faded transition-colors px-1"
+            className="text-sm text-faded hover:text-sepia transition-colors px-1"
           >
             ✕
           </button>
@@ -168,17 +168,18 @@ function GenerationToast() {
             <p className="font-body text-sm text-sepia leading-snug">
               {status === 'story' ? '스토리를 생성하고 있습니다' : '캐릭터 이미지를 생성하고 있습니다'}
             </p>
-            <p className="font-detail text-[10px] text-faded mt-1 tracking-wide">완료되면 알림이 표시됩니다</p>
+            <p className="text-xs text-faded mt-1" style={{ fontFamily: "'Noto Serif KR', serif" }}>완료되면 알림이 표시됩니다</p>
           </div>
         )}
 
         {status === 'complete' && (
           <div>
             <p className="font-body text-sm text-sepia leading-snug">사건이 준비되었습니다.</p>
-            <p className="font-detail text-[10px] text-faded mt-1">지금 바로 수사를 시작하세요</p>
+            <p className="text-xs text-faded mt-1" style={{ fontFamily: "'Noto Serif KR', serif" }}>지금 바로 수사를 시작하세요</p>
             <button
               onClick={handlePlay}
-              className="btn-primary w-full mt-3 py-2.5 text-[0.65rem]"
+              className="btn-primary w-full mt-3 py-2.5 text-sm"
+              style={{ fontFamily: "'Noto Serif KR', serif" }}
             >
               수사 시작하기
             </button>
@@ -188,7 +189,7 @@ function GenerationToast() {
         {status === 'error' && (
           <div>
             <p className="font-body text-sm text-sepia leading-snug">생성에 실패했습니다.</p>
-            <p className="font-detail text-[10px] text-crimson/70 mt-1 line-clamp-2">{errorMessage ?? '알 수 없는 오류가 발생했습니다.'}</p>
+            <p className="text-xs text-crimson mt-1 line-clamp-2" style={{ fontFamily: "'Noto Serif KR', serif" }}>{errorMessage ?? '알 수 없는 오류가 발생했습니다.'}</p>
           </div>
         )}
       </div>
@@ -223,7 +224,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <nav className="hidden sm:flex items-center gap-1">
               <Link
                 to="/cases"
-                className="font-label text-xs tracking-[0.2em] uppercase text-faded hover:text-sepia transition-colors px-3 py-2"
+                className="text-sm text-gold-dim hover:text-gold transition-colors px-3 py-2"
+                style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
                 사건 목록
               </Link>

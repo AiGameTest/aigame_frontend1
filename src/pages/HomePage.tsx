@@ -416,55 +416,143 @@ export function HomePage() {
   return (
     <div>
       {/* 히어로 */}
-      <section className="py-16 md:py-24 mb-16">
-        <div className="max-w-2xl">
-          {/* 분류 배지 */}
-          <p
-            className="badge-file mb-6 inline-block"
-            style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s 0.2s' }}
-          >
-            CASE FILE — OPEN CLUE
-          </p>
+      <section className="py-16 md:py-20 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-10 lg:gap-16 items-center">
 
-          {/* 타이틀 */}
-          <h1
-            className="font-display text-amber leading-none mb-6"
-            style={{
-              fontSize: 'clamp(2.8rem, 8vw, 5.5rem)',
-              animation: mounted ? 'title-in 1.4s cubic-bezier(0.16,1,0.3,1) forwards' : 'none',
-              opacity: 0,
-            }}
-          >
-            수사를<br />시작하라
-          </h1>
-
-          {/* 타이핑 */}
-          <div
-            className="flex items-baseline gap-1 mb-10"
-            style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s 0.8s' }}
-          >
-            <p className="font-body italic text-sepia/80 text-lg md:text-xl min-h-[1.8rem]">
-              {typewriterText}
+          {/* 왼쪽: 메인 콘텐츠 */}
+          <div>
+            {/* 분류 배지 */}
+            <p
+              className="badge-file mb-6 inline-block"
+              style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s 0.2s' }}
+            >
+              CASE FILE — OPEN CLUE
             </p>
-            <span className="font-detail text-gold text-lg animate-cursor-blink">_</span>
+
+            {/* 타이틀 */}
+            <h1
+              className="font-display leading-none mb-6"
+              style={{
+                fontSize: 'clamp(2.8rem, 7vw, 5rem)',
+                animation: mounted ? 'title-in 1.4s cubic-bezier(0.16,1,0.3,1) forwards' : 'none',
+                opacity: 0,
+                background: 'linear-gradient(140deg, #7a6a4e 0%, #d4c49e 28%, #e8c96a 50%, #d4c49e 72%, #7a6a4e 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 32px rgba(201, 164, 71, 0.32))',
+              }}
+            >
+              수사를<br />시작하라
+            </h1>
+
+            {/* 타이핑 */}
+            <div
+              className="mb-10"
+              style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s 0.8s' }}
+            >
+              <p className="font-body italic text-sepia/80 text-lg md:text-xl min-h-[2rem]">
+                {typewriterText}<span className="font-detail not-italic text-gold animate-cursor-blink ml-0.5">_</span>
+              </p>
+            </div>
+
+            {/* 버튼 */}
+            <div
+              className="flex flex-wrap gap-3"
+              style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s 1.1s' }}
+            >
+              <Link to="/cases?tab=basic" className="btn-primary">
+                사건 목록 열람
+              </Link>
+              <button onClick={() => setShowAiModal(true)} className="btn-secondary">
+                AI 사건 생성
+              </button>
+              {!user && (
+                <Link to="/login" className="btn-ghost">
+                  로그인
+                </Link>
+              )}
+            </div>
           </div>
 
-          {/* 버튼 */}
+          {/* 오른쪽: 케이스 파일 패널 (데스크탑만) */}
           <div
-            className="flex flex-wrap gap-3"
-            style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.6s 1.1s' }}
+            className="hidden lg:block"
+            style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.8s 0.5s' }}
           >
-            <Link to="/cases?tab=basic" className="btn-primary">
-              사건 목록 열람
-            </Link>
-            <button onClick={() => setShowAiModal(true)} className="btn-secondary">
-              AI 사건 생성
-            </button>
-            {!user && (
-              <Link to="/login" className="btn-ghost">
-                로그인
-              </Link>
-            )}
+            <div
+              className="border border-ghost bg-paper relative overflow-hidden"
+              style={{ boxShadow: 'inset 0 0 0 1px rgba(61,52,40,0.3), 4px 6px 24px rgba(6,5,4,0.7)' }}
+            >
+              {/* 상단 금선 */}
+              <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-gold-dim to-transparent" />
+
+              <div className="px-8 py-9 flex flex-col items-center text-center gap-5">
+                {/* 기관 라벨 */}
+                <p className="font-detail text-[10px] tracking-[0.35em] uppercase text-gold-dim">
+                  DETECTIVE BUREAU
+                </p>
+
+                {/* 메인 브랜드 — index.html .title-main 구조와 동일 */}
+                <div className="text-center">
+                  {/* Open + Clue: 같은 element에 하나의 그라디언트 */}
+                  <div
+                    className="font-display leading-none"
+                    style={{
+                      fontSize: 'clamp(2.6rem, 6.5vw, 4.5rem)',
+                      fontWeight: 900,
+                      letterSpacing: '0.02em',
+                      background: 'linear-gradient(140deg, #7a6a4e 0%, #d4c49e 28%, #e8c96a 50%, #d4c49e 72%, #7a6a4e 100%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(0 0 28px rgba(201, 164, 71, 0.28))',
+                    }}
+                  >
+                    Open<br />Clue
+                  </div>
+                  {/* 미스터리 탐정 — index.html .line-kr 구조와 동일 */}
+                  <p
+                    style={{
+                      fontFamily: "'Noto Serif KR', serif",
+                      fontSize: '0.88rem',
+                      letterSpacing: '0.5em',
+                      color: '#c9a447',
+                      marginTop: '10px',
+                    }}
+                  >
+                    미스터리&nbsp;&nbsp;탐정
+                  </p>
+                </div>
+
+                {/* 케이스 메타 */}
+                <div className="space-y-1.5 w-full text-left">
+                  <div className="flex justify-between items-center">
+                    <span className="font-detail text-[10px] text-gold-dim tracking-widest uppercase">Genre</span>
+                    <span className="font-detail text-[10px] text-faded">AI Murder Mystery</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-detail text-[10px] text-gold-dim tracking-widest uppercase">Type</span>
+                    <span className="font-detail text-[10px] text-faded">Interactive Fiction</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-detail text-[10px] text-gold-dim tracking-widest uppercase">Status</span>
+                    <span className="font-detail text-[10px] text-amber">● OPEN</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 하단 금선 */}
+              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gold-dim/50 to-transparent" />
+
+              {/* 배경 워터마크 */}
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                style={{ opacity: 0.03 }}
+              >
+                <p className="font-display text-gold" style={{ fontSize: '8rem', letterSpacing: '0.1em' }}>OC</p>
+              </div>
+            </div>
           </div>
         </div>
 
