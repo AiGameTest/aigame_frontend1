@@ -765,7 +765,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                     </button>
                   )}
                   <button
-                    className="flex-1 py-2.5 rounded-xl bg-accent-pink text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-xl bg-[#3B82F6] text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
                     onClick={handleStart}
                     disabled={isStarting}
                   >
