@@ -293,38 +293,34 @@ function ScrollSection({
 
 function DirectMakeCard() {
   return (
-    <Link to="/create" className="block group flex-shrink-0">
-      <div className="w-[220px] md:w-[250px]">
-        <div className="relative aspect-[16/10] overflow-hidden border border-dashed border-ghost group-hover:border-gold-dim bg-shadow mb-3 transition-colors">
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <span className="font-label text-2xl text-ghost group-hover:text-gold-dim transition-colors">＋</span>
-            <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">
-              새 사건 만들기
-            </span>
-          </div>
+    <Link to="/create" className="clue-card group block">
+      <div className="relative aspect-[16/10] overflow-hidden border border-dashed border-ghost group-hover:border-gold-dim bg-shadow -mx-5 -mt-5 mb-4 transition-colors flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <span className="font-label text-3xl text-ghost group-hover:text-gold-dim transition-colors">＋</span>
+          <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">
+            새 사건 만들기
+          </span>
         </div>
-        <h3 className="font-headline text-sm text-faded group-hover:text-sepia transition-colors">직접 만들기</h3>
-        <p className="font-detail text-[10px] text-ghost mt-0.5 tracking-wide">나만의 사건을 설계하고 게시하세요</p>
       </div>
+      <h3 className="font-headline text-lg text-faded group-hover:text-sepia transition-colors mb-2">직접 만들기</h3>
+      <p className="font-body text-sm text-sepia/50 italic leading-relaxed">나만의 사건을 설계하고 게시하세요</p>
     </Link>
   );
 }
 
 function AiMakeCard({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="block group flex-shrink-0 text-left">
-      <div className="w-[220px] md:w-[250px]">
-        <div className="relative aspect-[16/10] overflow-hidden border border-dashed border-ghost group-hover:border-gold-dim bg-shadow mb-3 transition-colors">
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <span className="font-label text-2xl text-ghost group-hover:text-gold-dim transition-colors">✦</span>
-            <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">
-              AI 사건 만들기
-            </span>
-          </div>
+    <button onClick={onClick} className="clue-card group block text-left w-full">
+      <div className="relative aspect-[16/10] overflow-hidden border border-dashed border-ghost group-hover:border-gold-dim bg-shadow -mx-5 -mt-5 mb-4 transition-colors flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <span className="font-label text-3xl text-ghost group-hover:text-gold-dim transition-colors">✦</span>
+          <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">
+            AI 사건 만들기
+          </span>
         </div>
-        <h3 className="font-headline text-sm text-faded group-hover:text-sepia transition-colors">AI 직접 만들기</h3>
-        <p className="font-detail text-[10px] text-ghost mt-0.5 tracking-wide">AI가 설정을 바탕으로 새로운 사건을 생성합니다</p>
       </div>
+      <h3 className="font-headline text-lg text-faded group-hover:text-sepia transition-colors mb-2">AI 사건 만들기</h3>
+      <p className="font-body text-sm text-sepia/50 italic leading-relaxed">AI가 설정을 바탕으로 새로운 사건을 생성합니다</p>
     </button>
   );
 }
@@ -563,7 +559,7 @@ export function HomePage() {
       </section>
 
       {/* 직접 만들기 */}
-      <ScrollSection title="직접" accent="만들기">
+      <ScrollSection title="직접" accent="만들기" layout="grid">
         <DirectMakeCard />
         <AiMakeCard onClick={() => setShowAiModal(true)} />
       </ScrollSection>

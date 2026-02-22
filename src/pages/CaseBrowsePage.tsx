@@ -175,15 +175,15 @@ export function CaseBrowsePage() {
         )
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          <Link to="/create" className="block group">
-            <div className="bg-paper border border-dashed border-ghost group-hover:border-gold-dim transition-colors p-5" style={{ aspectRatio: 'auto' }}>
-              <div className="aspect-[16/10] flex flex-col items-center justify-center gap-2 -mx-5 -mt-5 mb-4 bg-shadow border-b border-ghost group-hover:border-gold-dim transition-colors">
-                <span className="font-label text-2xl text-ghost group-hover:text-gold-dim transition-colors">＋</span>
+          <Link to="/create" className="clue-card group block">
+            <div className="relative aspect-[16/10] overflow-hidden border border-dashed border-ghost group-hover:border-gold-dim bg-shadow -mx-5 -mt-5 mb-4 transition-colors flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2">
+                <span className="font-label text-3xl text-ghost group-hover:text-gold-dim transition-colors">＋</span>
                 <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">새 사건 만들기</span>
               </div>
-              <h3 className="font-headline text-sm text-faded group-hover:text-sepia transition-colors">직접 만들기</h3>
-              <p className="font-detail text-[10px] text-ghost mt-0.5 tracking-wide">나만의 사건을 설계하고 게시하세요</p>
             </div>
+            <h3 className="font-headline text-lg text-faded group-hover:text-sepia transition-colors mb-2">직접 만들기</h3>
+            <p className="font-body text-sm text-sepia/50 italic leading-relaxed">나만의 사건을 설계하고 게시하세요</p>
           </Link>
           {customCases.map((c) => (
             <CaseBrowseCard
