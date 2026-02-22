@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listMyCases, listMySessions, updateNickname, updateProfileImage, uploadFile } from '../api/client';
 import type { SessionSummaryResponse, UserCaseDraftResponse } from '../api/types';
@@ -12,10 +12,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  ACTIVE: 'text-accent-pink',
-  WON: 'text-green-400',
-  LOST: 'text-red-400',
-  CLOSED: 'text-gray-400',
+  ACTIVE: 'text-gold',
+  WON: 'text-amber',
+  LOST: 'text-crimson',
+  CLOSED: 'text-faded',
 };
 
 const MODE_LABEL: Record<string, string> = {
@@ -31,7 +31,6 @@ export function ProfilePage() {
 
   const [myCases, setMyCases] = useState<UserCaseDraftResponse[]>([]);
   const [sessions, setSessions] = useState<SessionSummaryResponse[]>([]);
-
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState('');
   const [saving, setSaving] = useState(false);
@@ -48,13 +47,8 @@ export function ProfilePage() {
   }, [user]);
 
   const handleSaveNickname = async () => {
-    if (!nickname.trim() || nickname === user?.nickname) {
-      setIsEditing(false);
-      return;
-    }
-
-    setSaving(true);
-    setSaveMessage('');
+    if (!nickname.trim() || nickname === user?.nickname) { setIsEditing(false); return; }
+    setSaving(true); setSaveMessage('');
     try {
       await updateNickname({ nickname: nickname.trim() });
       await bootstrap();
@@ -64,15 +58,12 @@ export function ProfilePage() {
     } catch {
       setSaveMessage('닉네임 변경에 실패했습니다.');
       setTimeout(() => setSaveMessage(''), 3000);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const handleProfileImageChange = async (file: File | null) => {
     if (!file) return;
-    setUploadingProfile(true);
-    setSaveMessage('');
+    setUploadingProfile(true); setSaveMessage('');
     try {
       const uploaded = await uploadFile(file, 'profiles');
       await updateProfileImage({ profileImageUrl: uploaded.url });
@@ -82,43 +73,38 @@ export function ProfilePage() {
     } catch {
       setSaveMessage('프로필 이미지 변경에 실패했습니다.');
       setTimeout(() => setSaveMessage(''), 3000);
-    } finally {
-      setUploadingProfile(false);
-    }
+    } finally { setUploadingProfile(false); }
   };
 
   if (!user) return null;
 
   const activeSessions = sessions.filter((s) => s.status === 'ACTIVE');
   const pastSessions = sessions.filter((s) => s.status !== 'ACTIVE');
-
   const wonSessions = sessions.filter((s) => s.status === 'WON').length;
   const totalSessions = sessions.length;
   const winRate = totalSessions > 0 ? Math.round((wonSessions / totalSessions) * 100) : 0;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
-      <div className="bg-dark-card border border-dark-border rounded-2xl p-6 md:p-8">
+    <div className="max-w-3xl mx-auto py-10 space-y-6">
+
+      {/* 프로필 헤더 */}
+      <div className="panel-paper" style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(61,52,40,0.25)' }}>
+        <div className="h-[1px] bg-gold-dim -mx-6 -mt-6 mb-6" />
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-          <div className="flex items-center gap-4">
+
+          {/* 아바타 + 닉네임 */}
+          <div className="flex items-center gap-5">
             <div className="relative">
               <img
                 src={user.profileImageUrl}
                 alt={`${user.nickname} 프로필`}
-                className="w-20 h-20 rounded-full object-cover bg-dark-surface border border-dark-border"
+                className="w-20 h-20 rounded-full object-cover border border-ghost"
+                style={{ filter: 'sepia(0.3) brightness(0.9)' }}
               />
-              <label className="absolute -bottom-1 -right-1 text-xs px-2 py-1 rounded-full bg-dark-card border border-dark-border text-gray-200 cursor-pointer hover:text-white">
-                {uploadingProfile ? '업로드중' : '변경'}
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  disabled={uploadingProfile}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    void handleProfileImageChange(file);
-                    e.currentTarget.value = '';
-                  }}
+              <label className="absolute -bottom-1 -right-1 font-detail text-[9px] px-2 py-1 bg-shadow border border-ghost text-faded cursor-pointer hover:text-sepia hover:border-gold-dim transition-colors tracking-wide">
+                {uploadingProfile ? '...' : '변경'}
+                <input type="file" className="hidden" accept="image/*" disabled={uploadingProfile}
+                  onChange={(e) => { const f = e.target.files?.[0] ?? null; void handleProfileImageChange(f); e.currentTarget.value = ''; }}
                 />
               </label>
             </div>
@@ -127,178 +113,127 @@ export function ProfilePage() {
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   <input
-                    type="text"
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    className="input text-lg font-bold max-w-[220px]"
+                    type="text" value={nickname} onChange={(e) => setNickname(e.target.value)}
+                    className="noir-input text-base font-headline max-w-[200px] py-1.5"
                     autoFocus
                     onKeyDown={(e) => e.key === 'Enter' && void handleSaveNickname()}
                   />
-                  <button
-                    onClick={() => void handleSaveNickname()}
-                    disabled={saving}
-                    className="btn-outline text-xs px-3 py-1"
-                  >
-                    {saving ? '저장 중...' : '저장'}
+                  <button onClick={() => void handleSaveNickname()} disabled={saving} className="btn-secondary py-1.5 px-3 text-[0.65rem]">
+                    {saving ? '저장 중' : '저장'}
                   </button>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setNickname(user.nickname);
-                    }}
-                    className="btn-outline text-xs px-3 py-1"
-                  >
+                  <button onClick={() => { setIsEditing(false); setNickname(user.nickname); }} className="btn-ghost py-1.5 px-3 text-[0.65rem]">
                     취소
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl md:text-3xl font-black text-white">{user.nickname}</h1>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="text-gray-400 hover:text-accent-pink transition-colors p-1"
-                    title="닉네임 수정"
-                  >
-                    수정
-                  </button>
+                  <h1 className="font-headline text-2xl text-sepia">{user.nickname}</h1>
+                  <button onClick={() => setIsEditing(true)} className="font-detail text-[9px] text-ghost hover:text-gold-dim transition-colors tracking-widest">수정</button>
                 </div>
               )}
-
-              <p className="text-sm text-gray-400">{user.email}</p>
-
+              <p className="font-detail text-xs text-faded tracking-wide">{user.email}</p>
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-accent-pink/20 text-accent-pink text-sm font-semibold border border-accent-pink/30">
-                  {user.coins} Coins
-                </span>
-                {user.role === 'ADMIN' && (
-                  <span className="px-3 py-1 rounded-full bg-purple-600/20 text-purple-400 text-sm font-semibold border border-purple-600/30">
-                    Admin
-                  </span>
-                )}
+                <span className="badge-open">{user.coins.toLocaleString()} Coins</span>
+                {user.role === 'ADMIN' && <span className="badge-file">Admin</span>}
               </div>
-
               {saveMessage && (
-                <p className={`text-sm ${saveMessage.includes('실패') ? 'text-red-400' : 'text-green-400'}`}>
+                <p className={`font-detail text-[10px] tracking-wide ${saveMessage.includes('실패') ? 'text-crimson' : 'text-amber'}`}>
                   {saveMessage}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-black text-white">{totalSessions}</p>
-              <p className="text-xs text-gray-400">총 수사</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-green-400">{wonSessions}</p>
-              <p className="text-xs text-gray-400">해결</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-accent-pink">{winRate}%</p>
-              <p className="text-xs text-gray-400">성공률</p>
-            </div>
+          {/* 통계 */}
+          <div className="grid grid-cols-3 gap-6 md:gap-8">
+            {[
+              { value: totalSessions, label: '총 수사' },
+              { value: wonSessions, label: '해결' },
+              { value: `${winRate}%`, label: '성공률' },
+            ].map(({ value, label }) => (
+              <div key={label} className="text-center">
+                <p className="font-headline text-2xl text-amber">{value}</p>
+                <p className="font-detail text-[9px] text-ghost tracking-widest uppercase mt-1">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
+      {/* 진행 중인 수사 */}
       {activeSessions.length > 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-xl p-5">
-          <h2 className="text-xl font-semibold text-white mb-3">진행 중인 수사</h2>
-          <div className="space-y-2">
-            {activeSessions.map((s) => (
-              <div
-                key={s.id}
-                className="bg-dark-surface border border-dark-border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-accent-pink/50"
-                onClick={() => navigate(`/play/${s.publicId}`)}
-              >
-                <div>
-                  {s.title && (
-                    <p className="text-sm font-bold text-white mb-1">{s.title}</p>
-                  )}
-                  <span className="text-xs px-2 py-0.5 rounded bg-dark-card text-gray-300 mr-2">
-                    {MODE_LABEL[s.mode] ?? s.mode}
-                  </span>
-                  <span className={`text-sm font-semibold ${STATUS_STYLE[s.status]}`}>
-                    {STATUS_LABEL[s.status]}
-                  </span>
-                  {s.gameStartHour != null && s.gameEndHour != null && s.gameMinutesUsed != null && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      게임 시간: {s.gameStartHour}시~{s.gameEndHour}시 / 경과: {s.gameMinutesUsed}분
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-400 mt-1">
-                    시작: {new Date(s.startedAt).toLocaleString('ko-KR')}
-                  </p>
+        <div className="panel space-y-3">
+          <p className="font-label text-[10px] tracking-[0.25em] uppercase text-gold-dim mb-4">진행 중인 수사</p>
+          {activeSessions.map((s) => (
+            <div key={s.id} className="border border-ghost bg-dark p-3.5 flex items-center justify-between cursor-pointer hover:border-gold-dim transition-colors group" onClick={() => navigate(`/play/${s.publicId}`)}>
+              <div>
+                {s.title && <p className="font-headline text-sm text-sepia mb-1 group-hover:text-amber transition-colors">{s.title}</p>}
+                <div className="flex items-center gap-2">
+                  <span className="badge-file">{MODE_LABEL[s.mode] ?? s.mode}</span>
+                  <span className={`font-detail text-[10px] tracking-wide ${STATUS_STYLE[s.status]}`}>{STATUS_LABEL[s.status]}</span>
                 </div>
-                <span className="text-accent-pink text-sm font-bold">이어하기</span>
+                {s.gameStartHour != null && s.gameEndHour != null && s.gameMinutesUsed != null && (
+                  <p className="font-detail text-[9px] text-ghost mt-1 tracking-wide">
+                    게임 시간: {s.gameStartHour}시~{s.gameEndHour}시 / 경과: {s.gameMinutesUsed}분
+                  </p>
+                )}
               </div>
-            ))}
-          </div>
+              <span className="font-label text-[9px] tracking-[0.2em] uppercase text-gold-dim group-hover:text-gold transition-colors">이어하기 →</span>
+            </div>
+          ))}
         </div>
       )}
 
+      {/* 수사 기록 */}
       {pastSessions.length > 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-xl p-5">
-          <h2 className="text-xl font-semibold text-white mb-3">수사 기록</h2>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
+        <div className="panel space-y-3">
+          <p className="font-label text-[10px] tracking-[0.25em] uppercase text-faded mb-4">수사 기록</p>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
             {pastSessions.map((s) => (
-              <div
-                key={s.id}
-                className="bg-dark-surface border border-dark-border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-gray-500"
-                onClick={() => navigate(`/result/${s.publicId}`)}
-              >
+              <div key={s.id} className="border border-ghost bg-dark p-3.5 flex items-center justify-between cursor-pointer hover:border-ghost/80 transition-colors group" onClick={() => navigate(`/result/${s.publicId}`)}>
                 <div>
-                  {s.title && (
-                    <p className="text-sm font-bold text-white mb-1">{s.title}</p>
-                  )}
-                  <span className="text-xs px-2 py-0.5 rounded bg-dark-card text-gray-300 mr-2">
-                    {MODE_LABEL[s.mode] ?? s.mode}
-                  </span>
-                  <span className={`text-sm font-semibold ${STATUS_STYLE[s.status]}`}>
-                    {STATUS_LABEL[s.status]}
-                  </span>
-                  <p className="text-sm text-gray-400 mt-1">
-                    시작: {new Date(s.startedAt).toLocaleString('ko-KR')}
+                  {s.title && <p className="font-headline text-sm text-sepia mb-1">{s.title}</p>}
+                  <div className="flex items-center gap-2">
+                    <span className="badge-file">{MODE_LABEL[s.mode] ?? s.mode}</span>
+                    <span className={`font-detail text-[10px] tracking-wide ${STATUS_STYLE[s.status]}`}>{STATUS_LABEL[s.status]}</span>
+                  </div>
+                  <p className="font-detail text-[9px] text-ghost mt-1 tracking-wide">
+                    {new Date(s.startedAt).toLocaleString('ko-KR')}
                   </p>
                 </div>
-                <span className="text-gray-400 text-sm">결과 보기</span>
+                <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">결과 →</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* 내가 만든 사건 */}
       {myCases.length > 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-xl p-5">
-          <h2 className="text-xl font-semibold text-white mb-3">내가 만든 사건</h2>
-          <div className="space-y-2">
-            {myCases.map((c) => (
-              <div className="bg-dark-surface border border-dark-border rounded-lg p-3" key={c.id}>
-                <p className="font-semibold text-white">{c.title}</p>
-                <p className="text-sm text-gray-400">{c.summary}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`text-xs px-2 py-1 rounded ${c.published ? 'bg-green-600/20 text-green-400 border border-green-600/30' : 'bg-gray-600/20 text-gray-400 border border-gray-600/30'}`}>
-                    {c.published ? 'Published' : 'Draft'}
-                  </span>
-                  <span className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
-                  <button
-                    className="text-xs px-2 py-1 rounded border border-white/15 text-gray-300 hover:text-white hover:border-white/30 transition-colors ml-auto"
-                    onClick={() => navigate(`/create?editId=${c.id}`)}
-                  >
-                    수정
-                  </button>
+        <div className="panel space-y-3">
+          <p className="font-label text-[10px] tracking-[0.25em] uppercase text-faded mb-4">내가 만든 사건</p>
+          {myCases.map((c) => (
+            <div className="border border-ghost bg-dark p-3.5 flex items-center justify-between" key={c.id}>
+              <div>
+                <p className="font-headline text-sm text-sepia mb-1">{c.title}</p>
+                <p className="font-body italic text-xs text-faded line-clamp-1">{c.summary}</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className={c.published ? 'badge-open' : 'badge-closed'}>{c.published ? 'Published' : 'Draft'}</span>
+                  <span className="font-detail text-[9px] text-ghost">{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
                 </div>
               </div>
-            ))}
-          </div>
+              <button className="btn-ghost py-1.5 px-3 text-[0.65rem]" onClick={() => navigate(`/create?editId=${c.id}`)}>
+                수정
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
       {sessions.length === 0 && myCases.length === 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-xl p-8 text-center">
-          <p className="text-gray-400 mb-4">아직 수사 기록이 없습니다.</p>
-          <button className="btn px-6 py-3" onClick={() => navigate('/')}>
+        <div className="panel text-center py-10">
+          <p className="font-body italic text-faded mb-5 text-sm">아직 수사 기록이 없습니다.</p>
+          <button className="btn-primary px-8 py-3" onClick={() => navigate('/')}>
             첫 사건 시작하기
           </button>
         </div>

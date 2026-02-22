@@ -1,16 +1,16 @@
 export function PrivacyPage() {
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
+    <div className="max-w-3xl mx-auto py-12">
       {/* 헤더 */}
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-[0.2em] text-accent-pink/70 font-semibold mb-2">Legal</p>
-        <h1 className="text-3xl font-black text-white">개인정보처리방침</h1>
-        <p className="text-sm text-gray-500 mt-2">시행일: 정식 출시 시 재안내 · 최종 수정일: 2026년 2월 19일</p>
+        <p className="badge-file inline-block mb-3">Legal Document</p>
+        <h1 className="font-headline text-3xl text-sepia">개인정보처리방침</h1>
+        <p className="font-detail text-xs text-faded mt-2 tracking-wide">시행일: 정식 출시 시 재안내 · 최종 수정일: 2026년 2월 19일</p>
       </div>
 
-      <div className="space-y-10 text-sm text-gray-300 leading-relaxed">
+      <div className="space-y-10 font-body text-sm text-sepia/80 leading-relaxed">
         {/* 개요 */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5 text-gray-400">
+        <div className="border border-ghost bg-dark p-5 text-faded italic">
           Open Clue(이하 "서비스")는 「개인정보 보호법」 및 관련 법령을 준수하며, 이용자의 개인정보를 보호하기 위해 본 개인정보처리방침을 수립·공개합니다. 본 방침은 서비스가 수집하는 개인정보의 항목, 수집 목적, 보유 기간, 제3자 제공 여부 등을 안내합니다.
         </div>
 

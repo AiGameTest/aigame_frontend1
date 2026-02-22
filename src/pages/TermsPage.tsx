@@ -1,14 +1,14 @@
 export function TermsPage() {
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
+    <div className="max-w-3xl mx-auto py-12">
       {/* 헤더 */}
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-[0.2em] text-accent-pink/70 font-semibold mb-2">Legal</p>
-        <h1 className="text-3xl font-black text-white">이용약관</h1>
-        <p className="text-sm text-gray-500 mt-2">시행일: 정식 출시 시 재안내 · 최종 수정일: 2026년 2월 19일</p>
+        <p className="badge-file inline-block mb-3">Legal Document</p>
+        <h1 className="font-headline text-3xl text-sepia">이용약관</h1>
+        <p className="font-detail text-xs text-faded mt-2 tracking-wide">시행일: 정식 출시 시 재안내 · 최종 수정일: 2026년 2월 19일</p>
       </div>
 
-      <div className="space-y-10 text-sm text-gray-300 leading-relaxed">
+      <div className="space-y-10 font-body text-sm text-sepia/80 leading-relaxed">
 
         {/* 제1조 */}
         <Section title="제1조 (목적)">
@@ -131,7 +131,7 @@ export function TermsPage() {
           </ol>
         </Section>
 
-        <div className="pt-6 border-t border-white/10 text-xs text-gray-600">
+        <div className="pt-6 border-t border-ghost font-detail text-[10px] text-ghost tracking-widest">
           본 약관은 2026년 2월 19일부터 시행됩니다.
         </div>
       </div>
@@ -142,7 +142,7 @@ export function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-base font-bold text-white mb-3 pb-2 border-b border-white/10">{title}</h2>
+      <h2 className="font-headline text-base text-amber mb-3 pb-2 border-b border-ghost">{title}</h2>
       <div className="space-y-2">{children}</div>
     </section>
   );

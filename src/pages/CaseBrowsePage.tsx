@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listCasesPaged, listPublishedUserCasesPaged } from '../api/client';
 import type { CaseTemplateSummary, PagedResponse, UserCaseDraftResponse } from '../api/types';
@@ -8,103 +8,38 @@ import { CroppedThumbnail } from '../components/CroppedThumbnail';
 type Tab = 'basic' | 'custom';
 type SortOrder = 'popular' | 'recent';
 
-const BASIC_COLORS = [
-  'from-purple-900 to-pink-800',
-  'from-blue-900 to-cyan-800',
-  'from-red-900 to-orange-800',
-  'from-emerald-900 to-teal-800',
-  'from-indigo-900 to-violet-800',
-  'from-rose-900 to-red-800',
-];
-
-const CUSTOM_COLORS = [
-  'from-violet-900 to-fuchsia-800',
-  'from-sky-900 to-blue-800',
-  'from-amber-900 to-orange-800',
-  'from-lime-900 to-green-800',
-];
-
-function BasicCaseGridCard({ c, onClick }: { c: CaseTemplateSummary; onClick: (id: number) => void }) {
-  const colorIdx = c.id % BASIC_COLORS.length;
-  const hasCrop =
-    c.thumbnailUrl != null &&
-    c.thumbnailCropX != null &&
-    c.thumbnailCropY != null &&
-    c.thumbnailCropWidth != null;
+function CaseBrowseCard({ title, description, playCount, recommendCount, thumbnailUrl, thumbnailCropX, thumbnailCropY, thumbnailCropWidth, id, onClick }: {
+  title: string; description: string; playCount: number; recommendCount: number;
+  thumbnailUrl?: string; thumbnailCropX?: number; thumbnailCropY?: number; thumbnailCropWidth?: number;
+  id: number; onClick: () => void;
+}) {
+  const hasCrop = thumbnailUrl != null && thumbnailCropX != null && thumbnailCropY != null && thumbnailCropWidth != null;
   return (
-    <div className="group cursor-pointer" onClick={() => onClick(c.id)}>
-      <div className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${BASIC_COLORS[colorIdx]} mb-2`}>
-        {c.thumbnailUrl ? (
+    <div className="clue-card group" onClick={onClick}>
+      <div className="relative aspect-[16/10] overflow-hidden bg-shadow mb-4 -mx-5 -mt-5">
+        {thumbnailUrl ? (
           hasCrop ? (
-            <CroppedThumbnail
-              src={c.thumbnailUrl}
-              alt={c.title}
-              cropX={c.thumbnailCropX!}
-              cropY={c.thumbnailCropY!}
-              cropWidth={c.thumbnailCropWidth!}
-            />
+            <CroppedThumbnail src={thumbnailUrl} alt={title} cropX={thumbnailCropX!} cropY={thumbnailCropY!} cropWidth={thumbnailCropWidth!} />
           ) : (
-            <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
+            <img src={thumbnailUrl} alt={title} className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'sepia(0.3) brightness(0.8)' }} />
           )
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-5xl opacity-60">🔎</span>
+            <span className="font-detail text-ghost/30 text-4xl">?</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
-            사건 보기
-          </span>
+        <div className="absolute inset-0 bg-void/0 group-hover:bg-void/20 transition-colors flex items-end justify-end p-2.5">
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity font-label text-[9px] tracking-[0.2em] uppercase text-amber">열람 →</span>
         </div>
       </div>
-      <h3 className="text-sm font-semibold text-white truncate group-hover:text-accent-pink transition-colors">
-        {c.title}
-      </h3>
-      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.description}</p>
-      <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-400">
-        <span>▶ {c.playCount ?? 0}</span>
-        <span>♥ {c.recommendCount ?? 0}</span>
+      <div className="mb-2">
+        <span className="badge-file">FILE #{String(id).padStart(3, '0')}</span>
       </div>
-    </div>
-  );
-}
-
-function CustomCaseGridCard({ c, onClick }: { c: UserCaseDraftResponse; onClick: (id: number) => void }) {
-  const colorIdx = c.id % CUSTOM_COLORS.length;
-  const hasCrop =
-    c.thumbnailUrl != null &&
-    c.thumbnailCropX != null &&
-    c.thumbnailCropY != null &&
-    c.thumbnailCropWidth != null;
-  return (
-    <div className="group cursor-pointer" onClick={() => onClick(c.id)}>
-      <div className={`relative aspect-[16/10] rounded-lg overflow-hidden bg-gradient-to-br ${CUSTOM_COLORS[colorIdx]} mb-2`}>
-        {c.thumbnailUrl ? (
-          hasCrop ? (
-            <CroppedThumbnail
-              src={c.thumbnailUrl}
-              alt={c.title}
-              cropX={c.thumbnailCropX!}
-              cropY={c.thumbnailCropY!}
-              cropWidth={c.thumbnailCropWidth!}
-            />
-          ) : (
-            <img src={c.thumbnailUrl} alt={c.title} className="absolute inset-0 w-full h-full object-cover" />
-          )
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-5xl opacity-60">🔎</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
-      </div>
-      <h3 className="text-sm font-semibold text-white truncate group-hover:text-accent-pink transition-colors">
-        {c.title}
-      </h3>
-      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.summary}</p>
-      <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-400">
-        <span>▶ {c.playCount ?? 0}</span>
-        <span>♥ {c.recommendCount ?? 0}</span>
+      <h3 className="font-headline text-sm text-amber leading-snug truncate group-hover:text-gold transition-colors mb-1.5">{title}</h3>
+      <p className="font-body text-xs text-sepia/70 leading-relaxed line-clamp-2 italic mb-3">{description}</p>
+      <div className="flex items-center gap-3 pt-2.5 border-t border-ghost/60">
+        <span className="font-detail text-[10px] text-faded">▶ {playCount}</span>
+        <span className="font-detail text-[10px] text-faded">♥ {recommendCount}</span>
       </div>
     </div>
   );
@@ -112,13 +47,13 @@ function CustomCaseGridCard({ c, onClick }: { c: UserCaseDraftResponse; onClick:
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <div className="rounded-lg bg-white/[0.04] aspect-[16/10] animate-pulse" />
-          <div className="h-3 bg-white/[0.04] rounded animate-pulse w-3/4" />
-          <div className="h-2 bg-white/[0.03] rounded animate-pulse w-full" />
-          <div className="h-2 bg-white/[0.03] rounded animate-pulse w-1/2" />
+        <div key={i} className="bg-shadow border border-ghost p-5">
+          <div className="aspect-[16/10] bg-ghost/30 mb-4 -mx-5 -mt-5 animate-pulse" />
+          <div className="h-2.5 bg-ghost/30 rounded-none mb-2 w-1/3 animate-pulse" />
+          <div className="h-4 bg-ghost/20 mb-2 w-3/4 animate-pulse" />
+          <div className="h-3 bg-ghost/15 w-full animate-pulse" />
         </div>
       ))}
     </div>
@@ -129,9 +64,7 @@ export function CaseBrowsePage() {
   const BASIC_PAGE_SIZE = 12;
   const CUSTOM_PAGE_SIZE = 7;
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tab, setTab] = useState<Tab>(() =>
-    searchParams.get('tab') === 'custom' ? 'custom' : 'basic'
-  );
+  const [tab, setTab] = useState<Tab>(() => searchParams.get('tab') === 'custom' ? 'custom' : 'basic');
   const [sort, setSort] = useState<SortOrder>('popular');
   const [page, setPage] = useState(0);
   const [basicPageData, setBasicPageData] = useState<PagedResponse<CaseTemplateSummary> | null>(null);
@@ -140,66 +73,30 @@ export function CaseBrowsePage() {
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
   const [selectedSource, setSelectedSource] = useState<'basic' | 'user'>('basic');
 
-  useEffect(() => {
-    setPage(0);
-  }, [tab, sort]);
+  useEffect(() => { setPage(0); }, [tab, sort]);
 
   useEffect(() => {
     setLoading(true);
     const sortParam = sort === 'popular' ? 'recommended' : undefined;
     const currentPageSize = tab === 'basic' ? BASIC_PAGE_SIZE : CUSTOM_PAGE_SIZE;
-
     if (tab === 'basic') {
       void listCasesPaged({ sort: sortParam, page, size: currentPageSize })
         .then((data) => setBasicPageData(data))
-        .catch(() =>
-          setBasicPageData({
-            content: [],
-            page: 0,
-            size: currentPageSize,
-            totalElements: 0,
-            totalPages: 0,
-            last: true,
-          })
-        )
+        .catch(() => setBasicPageData({ content: [], page: 0, size: currentPageSize, totalElements: 0, totalPages: 0, last: true }))
         .finally(() => setLoading(false));
       return;
     }
-
     void listPublishedUserCasesPaged({ sort: sortParam, page, size: currentPageSize })
       .then((data) => setCustomPageData(data))
-      .catch(() =>
-        setCustomPageData({
-          content: [],
-          page: 0,
-          size: currentPageSize,
-          totalElements: 0,
-          totalPages: 0,
-          last: true,
-        })
-      )
+      .catch(() => setCustomPageData({ content: [], page: 0, size: currentPageSize, totalElements: 0, totalPages: 0, last: true }))
       .finally(() => setLoading(false));
   }, [tab, sort, page]);
 
-  useEffect(() => {
-    setSearchParams({ tab }, { replace: true });
-  }, [tab, setSearchParams]);
+  useEffect(() => { setSearchParams({ tab }, { replace: true }); }, [tab, setSearchParams]);
 
-  function switchTab(t: Tab) {
-    setTab(t);
-    setSort('popular');
-    setPage(0);
-  }
-
-  function openBasicCase(id: number) {
-    setSelectedSource('basic');
-    setSelectedCaseId(id);
-  }
-
-  function openUserCase(id: number) {
-    setSelectedSource('user');
-    setSelectedCaseId(id);
-  }
+  function switchTab(t: Tab) { setTab(t); setSort('popular'); setPage(0); }
+  function openBasicCase(id: number) { setSelectedSource('basic'); setSelectedCaseId(id); }
+  function openUserCase(id: number) { setSelectedSource('user'); setSelectedCaseId(id); }
 
   const currentPageData = tab === 'basic' ? basicPageData : customPageData;
   const count = loading ? null : (currentPageData?.totalElements ?? 0);
@@ -208,26 +105,24 @@ export function CaseBrowsePage() {
   const customCases = customPageData?.content ?? [];
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
-
+    <div className="py-8 space-y-8">
       {/* 헤더 */}
       <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-accent-pink/70 font-semibold mb-1">Case Library</p>
-        <h1 className="text-2xl font-black text-white">사건 목록</h1>
+        <p className="badge-file inline-block mb-3">CASE LIBRARY</p>
+        <h1 className="font-headline text-3xl text-sepia tracking-wide">사건 목록</h1>
       </div>
 
       {/* 탭 + 정렬 */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        {/* 탭 */}
-        <div className="flex border-b border-white/10">
+      <div className="flex items-center justify-between gap-4 flex-wrap border-b border-ghost pb-0">
+        <div className="flex">
           {(['basic', 'custom'] as const).map((t) => (
             <button
               key={t}
               onClick={() => switchTab(t)}
-              className={`px-4 py-2.5 -mb-px border-b-2 text-sm font-semibold transition-all ${
+              className={`px-4 py-3 -mb-px border-b font-label text-[10px] tracking-[0.2em] uppercase transition-all ${
                 tab === t
-                  ? 'border-accent-pink text-white'
-                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-ghost hover:text-faded'
               }`}
             >
               {t === 'basic' ? '기본 사건' : '커스텀 사건'}
@@ -235,23 +130,19 @@ export function CaseBrowsePage() {
           ))}
         </div>
 
-        {/* 개수 + 정렬 */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4 pb-3">
           {count !== null && (
-            <span className="text-xs text-gray-600">{count.toLocaleString()}개</span>
+            <span className="font-detail text-[10px] text-ghost tracking-widest">{count.toLocaleString()}건</span>
           )}
           <div className="flex gap-1.5">
             {(['popular', 'recent'] as const).map((s) => (
               <button
                 key={s}
-                onClick={() => {
-                  setSort(s);
-                  setPage(0);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                onClick={() => { setSort(s); setPage(0); }}
+                className={`px-3 py-1.5 border font-label text-[9px] tracking-[0.15em] uppercase transition-all ${
                   sort === s
-                    ? 'bg-accent-pink/15 border-accent-pink/40 text-accent-pink'
-                    : 'bg-white/[0.03] border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
+                    ? 'border-gold-dim text-gold bg-gold/6'
+                    : 'border-ghost text-ghost hover:border-gold-dim/40 hover:text-faded'
                 }`}
               >
                 {s === 'popular' ? '인기순' : '최신순'}
@@ -266,58 +157,68 @@ export function CaseBrowsePage() {
         <SkeletonGrid />
       ) : tab === 'basic' ? (
         basicCases.length === 0 ? (
-          <div className="text-center py-20 text-gray-500 text-sm">기본 사건이 없습니다.</div>
+          <div className="text-center py-20">
+            <p className="font-body italic text-faded text-sm">기본 사건이 없습니다.</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {basicCases.map((c) => (
-              <BasicCaseGridCard key={c.id} c={c} onClick={openBasicCase} />
+              <CaseBrowseCard
+                key={c.id} id={c.id} title={c.title} description={c.description}
+                playCount={c.playCount ?? 0} recommendCount={c.recommendCount ?? 0}
+                thumbnailUrl={c.thumbnailUrl} thumbnailCropX={c.thumbnailCropX}
+                thumbnailCropY={c.thumbnailCropY} thumbnailCropWidth={c.thumbnailCropWidth}
+                onClick={() => openBasicCase(c.id)}
+              />
             ))}
           </div>
         )
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6">
-          {/* 새 사건 만들기 카드 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           <Link to="/create" className="block group">
-            <div className="relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-dashed border-zinc-600 group-hover:border-accent-pink bg-zinc-900 mb-2 transition-colors">
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
-                <span className="text-2xl text-zinc-500 group-hover:text-accent-pink transition-colors leading-none">＋</span>
-                <span className="text-xs text-zinc-500 group-hover:text-accent-pink transition-colors font-medium">새 사건 만들기</span>
+            <div className="bg-paper border border-dashed border-ghost group-hover:border-gold-dim transition-colors p-5" style={{ aspectRatio: 'auto' }}>
+              <div className="aspect-[16/10] flex flex-col items-center justify-center gap-2 -mx-5 -mt-5 mb-4 bg-shadow border-b border-ghost group-hover:border-gold-dim transition-colors">
+                <span className="font-label text-2xl text-ghost group-hover:text-gold-dim transition-colors">＋</span>
+                <span className="font-label text-[9px] tracking-[0.2em] uppercase text-ghost group-hover:text-faded transition-colors">새 사건 만들기</span>
               </div>
+              <h3 className="font-headline text-sm text-faded group-hover:text-sepia transition-colors">직접 만들기</h3>
+              <p className="font-detail text-[10px] text-ghost mt-0.5 tracking-wide">나만의 사건을 설계하고 게시하세요</p>
             </div>
-            <h3 className="text-sm font-semibold text-zinc-400 group-hover:text-accent-pink transition-colors">직접 만들기</h3>
-            <p className="text-xs text-gray-600 mt-0.5">나만의 사건을 설계하고 게시하세요</p>
           </Link>
-
           {customCases.map((c) => (
-            <CustomCaseGridCard key={c.id} c={c} onClick={openUserCase} />
+            <CaseBrowseCard
+              key={c.id} id={c.id} title={c.title} description={c.summary}
+              playCount={c.playCount ?? 0} recommendCount={c.recommendCount ?? 0}
+              thumbnailUrl={c.thumbnailUrl} thumbnailCropX={c.thumbnailCropX}
+              thumbnailCropY={c.thumbnailCropY} thumbnailCropWidth={c.thumbnailCropWidth}
+              onClick={() => openUserCase(c.id)}
+            />
           ))}
-
           {customCases.length === 0 && (
-            <p className="col-span-full text-center py-12 text-gray-600 text-sm">
-              아직 게시된 커스텀 사건이 없습니다.
-            </p>
+            <p className="col-span-full text-center py-12 font-body italic text-faded text-sm">아직 게시된 커스텀 사건이 없습니다.</p>
           )}
         </div>
       )}
 
+      {/* 페이지네이션 */}
       {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
+        <div className="flex items-center justify-center gap-3 pt-4">
           <button
             onClick={() => setPage((p) => Math.max(p - 1, 0))}
             disabled={page === 0}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/10 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-ghost py-2 px-4 text-[0.65rem] disabled:opacity-30"
           >
-            이전
+            ← 이전
           </button>
-          <span className="text-xs text-gray-400">
+          <span className="font-detail text-xs text-faded tracking-widest">
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
             disabled={page >= totalPages - 1}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/10 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-ghost py-2 px-4 text-[0.65rem] disabled:opacity-30"
           >
-            다음
+            다음 →
           </button>
         </div>
       )}

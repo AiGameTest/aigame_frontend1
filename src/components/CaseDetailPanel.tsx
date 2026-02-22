@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   addCaseComment,
@@ -49,15 +49,6 @@ interface PanelCase {
   thumbnailUrl?: string;
 }
 
-const THUMBNAIL_COLORS = [
-  'from-purple-900 via-pink-900 to-rose-900',
-  'from-blue-900 via-cyan-900 to-teal-900',
-  'from-red-900 via-orange-900 to-amber-900',
-  'from-emerald-900 via-teal-900 to-cyan-900',
-  'from-indigo-900 via-violet-900 to-purple-900',
-  'from-rose-900 via-pink-900 to-fuchsia-900',
-];
-
 interface CaseDetailPanelProps {
   caseId: number | null;
   source: CaseSource;
@@ -85,11 +76,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function CommentItem({
-  comment,
-  user,
-  onLike,
-  onDelete,
-  onReply,
+  comment, user, onLike, onDelete, onReply,
 }: {
   comment: CaseCommentResponse;
   user: { id: number } | null;
@@ -102,30 +89,30 @@ function CommentItem({
       <img
         src={comment.profileImageUrl}
         alt={comment.nickname}
-        className="w-8 h-8 flex-shrink-0 rounded-full bg-zinc-800 border border-white/10 object-cover"
+        className="w-7 h-7 flex-shrink-0 rounded-full border border-ghost object-cover"
+        style={{ filter: 'sepia(0.2) brightness(0.9)' }}
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-gray-200">{comment.nickname}</span>
-          <span className="text-[11px] text-gray-600">{timeAgo(comment.createdAt)}</span>
+          <span className="font-label text-[10px] tracking-wider text-sepia">{comment.nickname}</span>
+          <span className="font-detail text-[9px] text-ghost">{timeAgo(comment.createdAt)}</span>
         </div>
-        <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
+        <p className="font-body text-xs text-sepia/80 leading-relaxed">{comment.content}</p>
         <div className="flex items-center gap-3 mt-2">
           <button
             onClick={() => onLike(comment.id)}
             disabled={!user}
-            className={`flex items-center gap-1 text-[11px] transition-colors disabled:opacity-40 ${
-              comment.liked ? 'text-red-400' : 'text-gray-600 hover:text-gray-400'
+            className={`flex items-center gap-1 font-detail text-[9px] tracking-wide transition-colors disabled:opacity-40 ${
+              comment.liked ? 'text-crimson' : 'text-ghost hover:text-faded'
             }`}
           >
-            {comment.liked ? '♥' : '♡'}
-            <span>{comment.likeCount}</span>
+            {comment.liked ? '♥' : '♡'} {comment.likeCount}
           </button>
           {comment.replies !== undefined && (
             <button
               onClick={() => onReply(comment.id)}
               disabled={!user}
-              className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-40"
+              className="font-detail text-[9px] text-ghost hover:text-faded transition-colors tracking-wide disabled:opacity-40"
             >
               답글
             </button>
@@ -133,7 +120,7 @@ function CommentItem({
           {user && user.id === comment.userId && (
             <button
               onClick={() => onDelete(comment.id)}
-              className="text-[11px] text-gray-600 hover:text-red-400 transition-colors"
+              className="font-detail text-[9px] text-ghost hover:text-crimson/70 transition-colors tracking-wide"
             >
               삭제
             </button>
@@ -169,11 +156,9 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
 
   const isOpen = caseId !== null;
   const isStarting = genStatus === 'story' || genStatus === 'images';
+
   useEffect(() => {
-    if (!isStarting) {
-      setStartingMessageIndex(0);
-      return;
-    }
+    if (!isStarting) { setStartingMessageIndex(0); return; }
     const timer = window.setInterval(() => {
       setStartingMessageIndex((prev) => (prev + 1) % SESSION_BUILDING_MESSAGES.length);
     }, 3000);
@@ -181,9 +166,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
   }, [isStarting]);
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -193,19 +176,13 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  // Load case detail
   useEffect(() => {
     if (!caseId) {
-      setDetail(null);
-      setActiveSession(null);
-      setActiveTab('소개');
-      setComments([]);
-      setCommentCount(0);
-      setReplyTo(null);
+      setDetail(null); setActiveSession(null); setActiveTab('소개');
+      setComments([]); setCommentCount(0); setReplyTo(null);
       return;
     }
-    setLoading(true);
-    setDetail(null);
+    setLoading(true); setDetail(null);
 
     if (source === 'user') {
       listPublishedUserCases()
@@ -218,39 +195,25 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
           try {
             const parsed = JSON.parse(found.scenarioPrompt);
             if (parsed?.setting) setting = parsed.setting;
-            if (parsed?.victim) {
-              victim = { name: parsed.victim?.name ?? '', description: parsed.victim?.description };
-            }
+            if (parsed?.victim) victim = { name: parsed.victim?.name ?? '', description: parsed.victim?.description };
             if (Array.isArray(parsed?.suspects)) {
-              suspects = parsed.suspects
-                .filter((s: any) => s?.name)
-                .map((s: any) => ({
-                  name: s.name,
-                  personality: s.personality,
-                  background: s.background,
-                  imageUrl: s.imageUrl,
-                }));
+              suspects = parsed.suspects.filter((s: any) => s?.name).map((s: any) => ({
+                name: s.name, personality: s.personality, background: s.background, imageUrl: s.imageUrl,
+              }));
             }
           } catch {}
           setDetail({
             id: found.id, title: found.title, description: found.summary,
-            previewNarrative: found.summary,
-            setting, victim, suspects,
-            source: 'user',
-            authorNickname: found.authorNickname,
+            previewNarrative: found.summary, setting, victim, suspects,
+            source: 'user', authorNickname: found.authorNickname,
             authorProfileImageUrl: found.authorProfileImageUrl,
-            playCount: found.playCount ?? 0,
-            recommendCount: found.recommendCount ?? 0,
-            recommended: found.recommended ?? false,
-            thumbnailUrl: found.thumbnailUrl,
+            playCount: found.playCount ?? 0, recommendCount: found.recommendCount ?? 0,
+            recommended: found.recommended ?? false, thumbnailUrl: found.thumbnailUrl,
           });
         })
         .finally(() => setLoading(false));
-
       listMySessions().then((sessions) => {
-        const active = sessions.find(
-          (s) => s.status === 'ACTIVE' && s.caseSourceType === 'USER_PUBLISHED' && s.sourceRefId === caseId
-        );
+        const active = sessions.find((s) => s.status === 'ACTIVE' && s.caseSourceType === 'USER_PUBLISHED' && s.sourceRefId === caseId);
         setActiveSession(active ?? null);
       });
     } else {
@@ -258,29 +221,20 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
         .then((d) => {
           setDetail({
             id: d.id, title: d.title, description: d.description,
-            previewNarrative: d.previewNarrative ?? '',
-            setting: d.setting,
-            victim: d.victim,
-            suspects: d.suspects ?? [],
-            source: 'basic',
-            playCount: d.playCount ?? 0,
-            recommendCount: d.recommendCount ?? 0,
-            recommended: d.recommended ?? false,
-            thumbnailUrl: d.thumbnailUrl,
+            previewNarrative: d.previewNarrative ?? '', setting: d.setting,
+            victim: d.victim, suspects: d.suspects ?? [], source: 'basic',
+            playCount: d.playCount ?? 0, recommendCount: d.recommendCount ?? 0,
+            recommended: d.recommended ?? false, thumbnailUrl: d.thumbnailUrl,
           });
         })
         .finally(() => setLoading(false));
-
       listMySessions().then((sessions) => {
-        const active = sessions.find(
-          (s) => s.status === 'ACTIVE' && s.caseSourceType === 'BASIC_TEMPLATE' && s.sourceRefId === caseId
-        );
+        const active = sessions.find((s) => s.status === 'ACTIVE' && s.caseSourceType === 'BASIC_TEMPLATE' && s.sourceRefId === caseId);
         setActiveSession(active ?? null);
       });
     }
   }, [caseId, source]);
 
-  // Load comments when case is loaded
   useEffect(() => {
     if (!caseId) return;
     const fetchComments = source === 'user' ? listUserCaseComments : listCaseComments;
@@ -293,10 +247,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
 
   async function handleStart() {
     if (!detail || genStatus !== 'idle') return;
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    if (!user) { navigate('/login'); return; }
     await startGeneration(
       detail.source === 'user'
         ? { mode: 'USER', publishedUserCaseId: detail.id }
@@ -304,9 +255,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     );
   }
 
-  function handleContinue() {
-    if (activeSession) navigate(`/play/${activeSession.publicId}`);
-  }
+  function handleContinue() { if (activeSession) navigate(`/play/${activeSession.publicId}`); }
 
   async function handleLike() {
     if (!detail || recommending || !user) return;
@@ -315,14 +264,8 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       const result = detail.source === 'user'
         ? await recommendUserCase(detail.id)
         : await recommendCase(detail.id);
-      setDetail((prev) => prev ? {
-        ...prev,
-        recommended: result.recommended,
-        recommendCount: result.recommendCount,
-      } : prev);
-    } finally {
-      setRecommending(false);
-    }
+      setDetail((prev) => prev ? { ...prev, recommended: result.recommended, recommendCount: result.recommendCount } : prev);
+    } finally { setRecommending(false); }
   }
 
   async function handleAddComment() {
@@ -334,9 +277,7 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
       setComments((prev) => [newComment, ...prev]);
       setCommentCount((n) => n + 1);
       setCommentInput('');
-    } finally {
-      setSubmittingComment(false);
-    }
+    } finally { setSubmittingComment(false); }
   }
 
   async function handleAddReply(parentId: number) {
@@ -345,19 +286,10 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     try {
       const addFn = source === 'user' ? addUserCaseComment : addCaseComment;
       const newReply = await addFn(caseId, { content: replyInput.trim(), parentId });
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === parentId
-            ? { ...c, replies: [...(c.replies ?? []), newReply] }
-            : c
-        )
-      );
+      setComments((prev) => prev.map((c) => c.id === parentId ? { ...c, replies: [...(c.replies ?? []), newReply] } : c));
       setCommentCount((n) => n + 1);
-      setReplyInput('');
-      setReplyTo(null);
-    } finally {
-      setSubmittingReply(false);
-    }
+      setReplyInput(''); setReplyTo(null);
+    } finally { setSubmittingReply(false); }
   }
 
   async function handleCommentLike(commentId: number) {
@@ -368,17 +300,10 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     } catch {}
   }
 
-  function updateCommentLike(
-    list: CaseCommentResponse[],
-    commentId: number,
-    liked: boolean,
-    likeCount: number
-  ): CaseCommentResponse[] {
+  function updateCommentLike(list: CaseCommentResponse[], commentId: number, liked: boolean, likeCount: number): CaseCommentResponse[] {
     return list.map((c) => {
       if (c.id === commentId) return { ...c, liked, likeCount };
-      if (c.replies?.length) {
-        return { ...c, replies: updateCommentLike(c.replies, commentId, liked, likeCount) };
-      }
+      if (c.replies?.length) return { ...c, replies: updateCommentLike(c.replies, commentId, liked, likeCount) };
       return c;
     });
   }
@@ -387,13 +312,9 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     if (!user) return;
     try {
       await deleteComment(commentId);
-      // Remove from root or from replies
       setComments((prev) => {
         const filtered = prev.filter((c) => c.id !== commentId);
-        if (filtered.length < prev.length) {
-          setCommentCount((n) => n - 1);
-          return filtered;
-        }
+        if (filtered.length < prev.length) { setCommentCount((n) => n - 1); return filtered; }
         return prev.map((c) => {
           if (c.replies?.some((r) => r.id === commentId)) {
             setCommentCount((n) => n - 1);
@@ -411,236 +332,205 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     setTimeout(() => replyInputRef.current?.focus(), 50);
   }
 
-  const colorIdx = detail ? detail.id % THUMBNAIL_COLORS.length : 0;
-
   if (!isOpen) return null;
 
   return (
     <>
-      
-      <div className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-void/85 backdrop-blur-sm" onClick={onClose} />
 
-      
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="relative w-full max-w-4xl bg-[#0f1117] border border-white/10 rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] flex overflow-hidden"
-          style={{ height: 'min(72vh, 680px)', minHeight: '460px' }}
+          className="relative w-full max-w-4xl bg-shadow border border-ghost flex overflow-hidden"
+          style={{
+            height: 'min(72vh, 680px)', minHeight: '460px',
+            boxShadow: '0 0 80px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(61,52,40,0.2)',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* 상단 골드 선 */}
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gold-dim z-10" />
 
-          
-          <div className="hidden md:flex w-[360px] flex-shrink-0 flex-col" style={{ height: '100%' }}>
-
-            
+          {/* 좌측 — 썸네일 */}
+          <div className="hidden md:flex w-[340px] flex-shrink-0 flex-col" style={{ height: '100%' }}>
             <div className="flex-1 relative overflow-hidden min-h-0">
               {loading || !detail ? (
-                <div className={`absolute inset-0 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]}`} />
+                <div className="absolute inset-0 bg-dark animate-pulse" />
               ) : detail.thumbnailUrl ? (
                 <img
                   src={detail.thumbnailUrl}
                   alt={detail.title}
                   className="absolute inset-0 w-full h-full object-cover"
+                  style={{ filter: 'sepia(0.35) brightness(0.75)' }}
                 />
               ) : (
-                <div className={`absolute inset-0 bg-gradient-to-br ${THUMBNAIL_COLORS[colorIdx]} flex flex-col items-center justify-center gap-4`}>
-                  <div className="absolute top-8 left-8 w-28 h-28 rounded-full bg-white/5 blur-2xl" />
-                  <div className="absolute bottom-16 right-4 w-20 h-20 rounded-full bg-white/5 blur-2xl" />
-                  <span className="relative text-8xl opacity-25">🔎</span>
+                <div className="absolute inset-0 bg-dark flex flex-col items-center justify-center gap-4">
+                  <span className="font-detail text-ghost/20 text-8xl tracking-widest">?</span>
                   {detail && (
-                    <div className="relative text-center px-5">
-                      <p className="text-white/40 text-[11px] uppercase tracking-widest">Murder Mystery</p>
-                      <p className="text-white font-black text-xl mt-2 leading-tight">{detail.title}</p>
+                    <div className="text-center px-5">
+                      <p className="font-label text-[9px] tracking-[0.25em] uppercase text-ghost mb-2">CASE FILE</p>
+                      <p className="font-headline text-xl text-faded leading-tight">{detail.title}</p>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            
-            <div className="flex-shrink-0 bg-black/70 border-t border-white/10 px-4 py-3 flex items-center justify-around">
+            {/* 통계 바 */}
+            <div className="flex-shrink-0 bg-shadow border-t border-ghost px-4 py-3 flex items-center justify-around">
               {detail?.source === 'user' && detail.authorNickname && (
                 <>
                   <div className="text-center min-w-0 flex-1">
-                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
                       {detail.authorProfileImageUrl && (
-                        <img
-                          src={detail.authorProfileImageUrl}
-                          alt={detail.authorNickname}
-                          className="w-4 h-4 rounded-full object-cover border border-white/10 flex-shrink-0"
+                        <img src={detail.authorProfileImageUrl} alt={detail.authorNickname}
+                          className="w-4 h-4 rounded-full object-cover border border-ghost flex-shrink-0"
+                          style={{ filter: 'sepia(0.3)' }}
                         />
                       )}
-                      <p className="text-white font-bold text-sm truncate max-w-[80px]">{detail.authorNickname}</p>
+                      <p className="font-label text-[9px] tracking-wider text-sepia truncate max-w-[70px]">{detail.authorNickname}</p>
                     </div>
-                    <p className="text-gray-500 text-[11px]">제작자</p>
+                    <p className="font-detail text-[9px] text-ghost tracking-widest">제작자</p>
                   </div>
-                  <div className="w-px h-8 bg-white/10" />
+                  <div className="w-px h-6 bg-ghost" />
                 </>
               )}
               <div className="text-center flex-1">
-                <p className="text-white font-bold text-base">{(detail?.playCount ?? 0).toLocaleString()}</p>
-                <p className="text-gray-500 text-[11px] mt-0.5">플레이</p>
+                <p className="font-headline text-base text-sepia">{(detail?.playCount ?? 0).toLocaleString()}</p>
+                <p className="font-detail text-[9px] text-ghost tracking-widest mt-0.5">플레이</p>
               </div>
-              <div className="w-px h-8 bg-white/10" />
+              <div className="w-px h-6 bg-ghost" />
               <div className="text-center flex-1">
-                <p className="text-white font-bold text-base">{(detail?.recommendCount ?? 0).toLocaleString()}</p>
-                <p className="text-gray-500 text-[11px] mt-0.5">좋아요</p>
+                <p className="font-headline text-base text-sepia">{(detail?.recommendCount ?? 0).toLocaleString()}</p>
+                <p className="font-detail text-[9px] text-ghost tracking-widest mt-0.5">추천</p>
               </div>
             </div>
           </div>
 
-          
+          {/* 우측 — 콘텐츠 */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ height: '100%' }}>
 
-            
-            <div className="flex-shrink-0 px-5 pt-5 border-b border-white/10">
+            {/* 헤더 */}
+            <div className="flex-shrink-0 px-5 pt-5 border-b border-ghost">
               <div className="flex items-start justify-between gap-3 pb-3">
                 <div className="min-w-0">
                   {loading || !detail ? (
                     <div className="space-y-2">
-                      <div className="h-5 w-20 bg-white/10 rounded-full animate-pulse" />
-                      <div className="h-7 w-48 bg-white/10 rounded animate-pulse" />
+                      <div className="h-2.5 w-20 bg-ghost/40 animate-pulse" />
+                      <div className="h-5 w-48 bg-ghost/30 animate-pulse" />
                     </div>
                   ) : (
                     <>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <div className="md:hidden flex items-center gap-2 text-xs text-gray-400">
+                        <span className="badge-file">FILE #{String(detail.id).padStart(3, '0')}</span>
+                        <div className="md:hidden flex items-center gap-2 font-detail text-[9px] text-ghost">
                           <span>▶ {detail.playCount}</span>
                           <button
                             onClick={handleLike}
                             disabled={recommending || !user}
-                            className={`transition-colors ${detail.recommended ? 'text-red-400' : ''}`}
+                            className={`transition-colors ${detail.recommended ? 'text-crimson' : ''}`}
                           >
                             {detail.recommended ? '♥' : '♡'} {detail.recommendCount}
                           </button>
                         </div>
                       </div>
-                      <h2 className="text-xl font-black text-white leading-tight">{detail.title}</h2>
+                      <h2 className="font-headline text-xl text-amber leading-tight">{detail.title}</h2>
                     </>
                   )}
                 </div>
                 <button
                   onClick={onClose}
-                  className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-colors"
+                  className="flex-shrink-0 w-7 h-7 flex items-center justify-center border border-ghost hover:border-gold-dim text-ghost hover:text-faded transition-all font-detail text-xs"
                 >
                   ✕
                 </button>
               </div>
 
-              
+              {/* 탭 */}
               <div className={`flex gap-0 transition-opacity duration-150 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {(['소개', '댓글'] as TabType[]).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 ${
-                      activeTab === tab
-                        ? 'border-white text-white'
-                        : 'border-transparent text-gray-500 hover:text-gray-300'
+                    className={`px-4 py-2.5 -mb-px border-b font-label text-[9px] tracking-[0.2em] uppercase transition-all ${
+                      activeTab === tab ? 'border-gold text-gold' : 'border-transparent text-ghost hover:text-faded'
                     }`}
                   >
                     {tab}
-                    {tab === '댓글' && (
-                      <span className="ml-1.5 text-xs text-gray-500">{commentCount}</span>
-                    )}
+                    {tab === '댓글' && <span className="ml-1.5 font-detail text-[9px] text-ghost">{commentCount}</span>}
                   </button>
                 ))}
               </div>
             </div>
 
-            
+            {/* 탭 콘텐츠 */}
             <div className="flex-1 min-h-0 relative overflow-hidden">
               {loading ? (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-                  불러오는 중...
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-6 h-6 border border-gold-dim border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : !detail ? null : activeTab === '소개' ? (
-
-                
                 <div className="absolute inset-0 overflow-y-auto">
                   <div className="p-5 space-y-4">
-
-                    
                     {detail.previewNarrative && (
-                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">게임 설명</p>
-                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      <div className="border border-ghost bg-dark p-4">
+                        <p className="font-label text-[9px] tracking-[0.25em] uppercase text-ghost mb-2">게임 설명</p>
+                        <p className="font-body text-sm text-sepia/80 leading-relaxed whitespace-pre-wrap italic">
                           {detail.previewNarrative}
                         </p>
                       </div>
                     )}
-
-                    
                     {detail.setting && detail.setting !== detail.previewNarrative && (
-                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">사건 배경</p>
-                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      <div className="border border-ghost bg-dark p-4">
+                        <p className="font-label text-[9px] tracking-[0.25em] uppercase text-ghost mb-2">사건 배경</p>
+                        <p className="font-body text-sm text-sepia/80 leading-relaxed whitespace-pre-wrap italic">
                           {detail.setting}
                         </p>
                       </div>
                     )}
-
-                    
                     {detail.victim && (detail.victim.name || detail.victim.description) && (
-                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">피해자</p>
-                        {detail.victim.name && (
-                          <p className="text-sm font-semibold text-white mb-1">{detail.victim.name}</p>
-                        )}
-                        {detail.victim.description && (
-                          <p className="text-sm text-gray-300 leading-relaxed">{detail.victim.description}</p>
-                        )}
+                      <div className="border border-ghost bg-dark p-4">
+                        <p className="font-label text-[9px] tracking-[0.25em] uppercase text-ghost mb-2">피해자</p>
+                        {detail.victim.name && <p className="font-headline text-sm text-amber mb-1">{detail.victim.name}</p>}
+                        {detail.victim.description && <p className="font-body text-xs text-sepia/70 leading-relaxed italic">{detail.victim.description}</p>}
                       </div>
                     )}
-
-                    
                     {detail.suspects.length > 0 && (
-                      <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-                        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-3">
-                          용의자 {detail.suspects.length}명
-                        </p>
+                      <div className="border border-ghost bg-dark p-4">
+                        <p className="font-label text-[9px] tracking-[0.25em] uppercase text-ghost mb-3">용의자 {detail.suspects.length}명</p>
                         <div className="space-y-3">
                           {detail.suspects.map((s) => (
                             <div key={s.name} className="flex items-start gap-2.5">
                               {s.imageUrl ? (
-                                <img
-                                  src={s.imageUrl}
-                                  alt={s.name}
-                                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
-                                />
+                                <img src={s.imageUrl} alt={s.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-ghost" style={{ filter: 'sepia(0.3)' }} />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-white/8 border border-white/10 flex items-center justify-center flex-shrink-0 text-sm">
-
+                                <div className="w-8 h-8 border border-ghost flex items-center justify-center flex-shrink-0 bg-shadow">
+                                  <span className="font-detail text-[10px] text-ghost">?</span>
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="text-sm font-semibold text-white">{s.name}</p>
-                                {s.personality && (
-                                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{s.personality}</p>
-                                )}
+                                <p className="font-headline text-sm text-sepia">{s.name}</p>
+                                {s.personality && <p className="font-body text-xs text-faded mt-0.5 leading-relaxed italic">{s.personality}</p>}
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-
                   </div>
                 </div>
-
               ) : (
-
                 <div className="absolute inset-0 flex flex-col">
                   {user ? (
-                    <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
+                    <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-ghost bg-shadow">
                       <div className="flex gap-2 items-center">
-                        <img
-                          src={user.profileImageUrl}
-                          alt={user.nickname}
-                          className="w-8 h-8 flex-shrink-0 rounded-full bg-accent-pink/20 border border-accent-pink/30 object-cover"
+                        <img src={user.profileImageUrl} alt={user.nickname}
+                          className="w-7 h-7 flex-shrink-0 rounded-full border border-ghost object-cover"
+                          style={{ filter: 'sepia(0.3)' }}
                         />
                         <input
                           ref={commentInputRef}
-                          className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-xl px-3 py-2 text-sm outline-none transition-all placeholder:text-gray-600"
+                          className="flex-1 bg-dark border border-ghost hover:border-gold-dim/50 focus:border-gold-dim text-sepia px-3 py-2 font-body text-xs outline-none transition-all placeholder:text-ghost"
+                          style={{ borderRadius: 0 }}
                           placeholder="댓글을 입력해 주세요..."
                           value={commentInput}
                           onChange={(e) => setCommentInput(e.target.value)}
@@ -649,62 +539,41 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                         <button
                           onClick={handleAddComment}
                           disabled={!commentInput.trim() || submittingComment}
-                          className="flex-shrink-0 px-3 py-2 rounded-xl bg-accent-pink text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
+                          className="btn-secondary py-2 px-3 text-[0.6rem] disabled:opacity-40"
                         >
                           등록
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-white/8 bg-[#0f1117]">
-                      <p className="text-sm text-gray-500 text-center py-1">로그인 후 댓글을 작성할 수 있습니다</p>
+                    <div className="flex-shrink-0 px-5 pt-4 pb-3 border-b border-ghost">
+                      <p className="font-body italic text-xs text-faded text-center py-1">로그인 후 댓글을 작성할 수 있습니다</p>
                     </div>
                   )}
 
-                  
                   <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
                     {comments.length === 0 ? (
-                      <p className="text-center text-gray-500 text-sm py-8">첫 댓글을 남겨보세요</p>
+                      <p className="text-center font-body italic text-faded text-sm py-8">첫 댓글을 남겨보세요</p>
                     ) : (
                       <div className="space-y-5">
                         {comments.map((comment) => (
                           <div key={comment.id}>
-                            <CommentItem
-                              comment={comment}
-                              user={user}
-                              onLike={handleCommentLike}
-                              onDelete={handleDeleteComment}
-                              onReply={handleReply}
-                            />
-
-                            
+                            <CommentItem comment={comment} user={user} onLike={handleCommentLike} onDelete={handleDeleteComment} onReply={handleReply} />
                             {comment.replies?.length > 0 && (
-                              <div className="ml-11 mt-3 space-y-3 pl-3 border-l border-white/5">
+                              <div className="ml-10 mt-3 space-y-3 pl-3 border-l border-ghost/50">
                                 {comment.replies.map((reply) => (
-                                  <CommentItem
-                                    key={reply.id}
-                                    comment={reply}
-                                    user={user}
-                                    onLike={handleCommentLike}
-                                    onDelete={handleDeleteComment}
-                                    onReply={() => handleReply(comment.id)}
-                                  />
+                                  <CommentItem key={reply.id} comment={reply} user={user} onLike={handleCommentLike} onDelete={handleDeleteComment} onReply={() => handleReply(comment.id)} />
                                 ))}
                               </div>
                             )}
-
-                            
                             {replyTo === comment.id && user && (
-                              <div className="ml-11 mt-3 pl-3 border-l border-white/5">
+                              <div className="ml-10 mt-3 pl-3 border-l border-ghost/50">
                                 <div className="flex gap-2 items-center">
-                                  <img
-                                    src={user.profileImageUrl}
-                                    alt={user.nickname}
-                                    className="w-6 h-6 flex-shrink-0 rounded-full object-cover"
-                                  />
+                                  <img src={user.profileImageUrl} alt={user.nickname} className="w-6 h-6 flex-shrink-0 rounded-full object-cover border border-ghost" style={{ filter: 'sepia(0.3)' }} />
                                   <input
                                     ref={replyInputRef}
-                                    className="flex-1 bg-white/5 border border-white/10 hover:border-white/20 focus:border-white/30 text-white rounded-lg px-3 py-1.5 text-xs outline-none transition-all placeholder:text-gray-600"
+                                    className="flex-1 bg-dark border border-ghost focus:border-gold-dim/50 text-sepia px-3 py-1.5 font-body text-xs outline-none transition-all placeholder:text-ghost"
+                                    style={{ borderRadius: 0 }}
                                     placeholder="답글을 입력해 주세요..."
                                     value={replyInput}
                                     onChange={(e) => setReplyInput(e.target.value)}
@@ -713,19 +582,8 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                                       if (e.key === 'Escape') { setReplyTo(null); setReplyInput(''); }
                                     }}
                                   />
-                                  <button
-                                    onClick={() => handleAddReply(comment.id)}
-                                    disabled={!replyInput.trim() || submittingReply}
-                                    className="flex-shrink-0 px-2.5 py-1.5 rounded-lg bg-accent-pink text-white text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
-                                  >
-                                    등록
-                                  </button>
-                                  <button
-                                    onClick={() => { setReplyTo(null); setReplyInput(''); }}
-                                    className="flex-shrink-0 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                                  >
-                                    취소
-                                  </button>
+                                  <button onClick={() => handleAddReply(comment.id)} disabled={!replyInput.trim() || submittingReply} className="btn-secondary py-1.5 px-2.5 text-[0.6rem] disabled:opacity-40">등록</button>
+                                  <button onClick={() => { setReplyTo(null); setReplyInput(''); }} className="font-detail text-[9px] text-ghost hover:text-faded transition-colors">취소</button>
                                 </div>
                               </div>
                             )}
@@ -738,18 +596,18 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
               )}
             </div>
 
-            
+            {/* 액션 바 */}
             {!loading && detail && (
-              <div className="flex-shrink-0 border-t border-white/10 p-4">
+              <div className="flex-shrink-0 border-t border-ghost p-4">
                 <div className="flex gap-2">
                   <button
                     onClick={handleLike}
                     disabled={recommending || !user}
                     title={!user ? '로그인 후 추천할 수 있습니다' : undefined}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all disabled:opacity-50 ${
+                    className={`flex items-center gap-1.5 px-4 py-2.5 border font-label text-[9px] tracking-[0.2em] uppercase transition-all disabled:opacity-40 ${
                       detail.recommended
-                        ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30'
-                        : 'bg-white/5 border-white/15 text-gray-300 hover:border-white/30 hover:text-white'
+                        ? 'border-crimson/50 text-crimson bg-crimson/10 hover:bg-crimson/15'
+                        : 'border-ghost text-ghost hover:border-gold-dim/40 hover:text-faded'
                     }`}
                   >
                     <span>{detail.recommended ? '♥' : '♡'}</span>
@@ -757,21 +615,18 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
                   </button>
 
                   {activeSession && (
-                    <button
-                      className="flex-1 py-2.5 rounded-xl border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors"
-                      onClick={handleContinue}
-                    >
+                    <button className="flex-1 btn-ghost py-2.5" onClick={handleContinue}>
                       이어하기
                     </button>
                   )}
                   <button
-                    className="flex-1 py-2.5 rounded-xl bg-[#3B82F6] text-white font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="flex-1 btn-primary py-2.5 disabled:opacity-50"
                     onClick={handleStart}
                     disabled={isStarting}
                   >
                     {isStarting ? (
                       <span className="inline-flex items-center gap-2">
-                        <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        <span className="w-3 h-3 rounded-full border border-void/40 border-t-void/80 animate-spin" />
                         {SESSION_BUILDING_MESSAGES[startingMessageIndex]}
                       </span>
                     ) : activeSession ? '새로 시작하기' : '▶ 시작하기'}
@@ -785,7 +640,3 @@ export function CaseDetailPanel({ caseId, source, onClose }: CaseDetailPanelProp
     </>
   );
 }
-
-
-
-
